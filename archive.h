@@ -13,7 +13,7 @@ struct archive_entry {
     unsigned long size;
 };
 
-// header: magic(4) | n(4)
+/* header: magic(4) | n(4) */
 struct archive_header {
     unsigned long magic;
     /* the amount of files */
