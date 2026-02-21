@@ -25,7 +25,15 @@ void reshape(int w, int h) {
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(-1.f, 1.f, -1.f, 1.f, -1.f, 1.f);
+    {
+        const float left = -1.f;
+        const float right = 1.f;
+        const float bottom = -1.f;
+        const float top = 1.f;
+        const float near_val = -1.f;
+        const float far_val = 1.f;
+        glOrtho(left, right, bottom, top, near_val, far_val);
+    }
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
