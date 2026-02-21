@@ -35,13 +35,19 @@ int main() {
     renderer_init(&ctx);
 
     while (!glfwWindowShouldClose(window)) {
-        glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
 
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            double x;
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            double x; /* Not sure about the c89 std in this next lines here */
             double y;
             glfwGetCursorPos(window, &x, &y);
-            renderer_push_quad(&ctx, (struct vec2){x, y}, 1.0f, 0.0f);
+            struct vec2 pos;
+            pos = (struct vec2){ (x / ctx.width) * 2.0f - 1.0f, -((y / ctx.height) * 2.0f - 1.0f) };
+
+            //printf("X: %f Y: %f\n", pos.x, pos.y);
+
+            renderer_push_quad(&ctx, pos, 1.0f, 0.0f);
         }
 
         renderer_draw(&ctx);

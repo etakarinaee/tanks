@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 float rectangle_vertices[] = {
      0.5f,  0.5f, 0.0f,     1.0f, 1.0f,     0.0f, 0.0f, 1.0f,
@@ -160,15 +161,50 @@ void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale
 }
 
 void renderer_draw(struct render_context *ctx) {
+    struct quad_data* data;
+    struct matrix m;
+    GLuint uniform_matrix_loc;
     int i;
 
     glUseProgram(ctx->program);
     glBindVertexArray(ctx->vao);
-
+    uniform_matrix_loc = glGetUniformLocation(ctx->program, "u_matrix");
+    
     for (i = 0; i < ctx->quads_count; i++) {
-        /* TODO: add the transforms to the quads */
+        /* TODO: also suppor scale and rotations */
+        data = &ctx->quads[i];
+        math_matrix_translate(&m, data->pos.x, data->pos.y, 0.0f);
+
+        glUniformMatrix4fv(uniform_matrix_loc, 1, GL_FALSE, m.m);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }
 }
 
+void math_matrix_indentity(struct matrix *m) {
+    memset(m, 0, sizeof(struct matrix));
+    m->m[0] = 1.0f;
+    m->m[5] = 1.0f;
+    m->m[10] = 1.0f;
+    m->m[15] = 1.0f;
+}
+
+void math_matrix_translate(struct matrix *m, float x, float y, float z) {
+    memset(m, 0, sizeof(struct matrix));
+    m->m[0] = 1.0f;
+    m->m[5] = 1.0f;
+    m->m[10] = 1.0f;
+    m->m[15] = 1.0f;
+
+    m->m[12] = x;
+    m->m[13] = y;
+    m->m[14] = z;
+}
+
+void math_matrix_scale(struct matrix *m, float x, float y, float z) {
+    memset(m, 0, sizeof(struct matrix));
+    m->m[0] = x;
+    m->m[5] = y;
+    m->m[10] = z;
+    m->m[15] = 1.0f;
+}
 
