@@ -3,36 +3,29 @@
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
-
-// TODO: embed the shaders properly somehow or load them at runtime
-const char *tri_fragment =
-        "#version 330 core\n"
-        "\n"
-        "in vec3 out_color;\n"
-        "\n"
-        "out vec4 fragment_color;\n"
-        "\n"
-        "void main()\n"
-        "{\n"
-        "    fragment_color = vec4(out_color, 1.0);\n"
-        "}\n";
-
-const char *tri_vertex =
-        "#version 330 core\n"
-        "\n"
-        "layout (location = 0) in vec2 a_position;\n"
-        "layout (location = 1) in vec3 a_color;\n"
-        "\n"
-        "out vec3 out_color;\n"
-        "\n"
-        "void main()\n"
-        "{\n"
-        "    gl_Position = vec4(a_position, 0.0, 1.0);\n"
-        "    out_color = a_color;\n"
-        "}\n";
+#include <stdlib.h>
 
 GLuint tri_program;
 GLuint vao, vbo;
+
+const char* load_shader(const char* path) {
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        fprintf(stderr, "failed to load shader: %s\n", path);
+        return NULL;
+    }
+
+    fseek(file, 0, SEEK_END);
+    int64_t size = ftell(file);
+    rewind(file);
+
+    char* buffer = malloc(size + 1);
+    fread(buffer, 1, size, file);
+    buffer[size] = '\0';
+    fclose(file);
+
+    return buffer;
+}
 
 GLuint compile_shader(GLenum type, const char *s) {
     int success;
@@ -69,6 +62,12 @@ GLuint create_shader_program(void) {
     int success;
     // infoLog
     char buf[512];
+    
+    const char* tri_vertex = load_shader("tri.vert");
+    const char* tri_fragment = load_shader("tri.frag");
+
+    printf("%s\n", tri_vertex);
+    printf("%s\n", tri_fragment);
 
     vertex_shader = compile_shader(GL_VERTEX_SHADER, tri_vertex);
     fragment_shader = compile_shader(GL_FRAGMENT_SHADER, tri_fragment);
@@ -89,6 +88,9 @@ GLuint create_shader_program(void) {
 
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
+
+    free(tri_vertex);
+    free(tri_fragment);
 
     return program;
 }
@@ -169,3 +171,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+

@@ -1,0 +1,3 @@
+/home/ttchef/coding/c/tanks/CMakeFiles/tanks.dir
+/home/ttchef/coding/c/tanks/CMakeFiles/edit_cache.dir
+/home/ttchef/coding/c/tanks/CMakeFiles/rebuild_cache.dir
