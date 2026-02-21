@@ -33,7 +33,7 @@ char* load_shader(const char* path) {
 
 GLuint compile_shader(GLenum type, const char *s) {
     int success;
-    // infoLog
+    /* infoLog */
     char buf[512];
     GLuint shader;
 
@@ -64,7 +64,7 @@ GLuint create_shader_program(void) {
     GLuint vertex_shader, fragment_shader;
     GLuint program;
     int success;
-    // infoLog
+    /* infoLog */
     char buf[512];
     
     char* tri_vertex = load_shader("tri.vert");
@@ -127,12 +127,12 @@ int main(int argc, char **argv) {
     glewExperimental = true;
     err = glewInit();
     if (err != GLEW_OK) {
-        // TODO: Cannot print value of type const GLubyte * that implies specifier %p with format specifier %s that implies type const char *
+        /* TODO: Cannot print value of type const GLubyte * that implies specifier %p with format specifier %s that implies type const char * */
         fprintf(stderr, "glewInit: %s\n", glewGetErrorString(err));
         return -1;
     }
 
-    // TODO: Cannot print value of type const GLubyte * that implies specifier %p with format specifier %s that implies type const char *
+    /* TODO: Cannot print value of type const GLubyte * that implies specifier %p with format specifier %s that implies type const char * */
     printf("OpenGL %s\n", glGetString(GL_VERSION));
 
     glClearColor(0.f, 0.f, 0.f, 0.f);
@@ -152,13 +152,13 @@ int main(int argc, char **argv) {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
 
-    // TODO: make this more readable
+    /* TODO: make this more readable */
 
-    // position at location 0
+    /* position at location 0 */
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // color at location 1
+    /* color at location 1 */
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
