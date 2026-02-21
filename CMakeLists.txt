@@ -5,4 +5,4 @@ set(CMAKE_C_STANDARD 90)
 
 add_executable(tanks main.c)
 
-target_link_libraries(tanks GL GLU glut)
+target_link_libraries(tanks GL GLU GLEW glut)
