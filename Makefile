@@ -1,7 +1,7 @@
 
 CC = gcc 
-
+CFLAGS = -Wall -Wextra -std=c89 -I.
 EXENAME = tanks
 
 all:
-	$(CC) main.c -o $(EXENAME) -lglut -lGL -lGLEW
+	$(CC) $(CFLAGS) main.c glad.c renderer.c -o $(EXENAME) -lglfw -lGL
