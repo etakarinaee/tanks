@@ -1,8 +1,14 @@
 cmake_minimum_required(VERSION 4.1)
-project(tanks C)
+project(sausages C)
 
 set(CMAKE_C_STANDARD 90)
 
-add_executable(tanks main.c)
+add_executable(sausages main.c
+        archive.c
+        archive.h)
 
+<<<<<<< Updated upstream
 target_link_libraries(tanks GL GLU GLEW glut)
+=======
+target_link_libraries(sausages GL GLU GLEW glut)
+>>>>>>> Stashed changes
