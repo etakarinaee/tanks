@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <luajit-2.1/lauxlib.h>
 #include <luajit-2.1/lua.h>
 
 #include "renderer.h"
+#include <GLFW/glfw3.h> /* after renderer because renderer includes glad which muss be included after glfw */
 
 static struct vec2 check_vec2(lua_State *L, int idx) {
     struct vec2 v;
@@ -64,12 +66,40 @@ static int push_quad(lua_State *L) {
     return 0;
 }
 
+static int key_pressed(lua_State *L) {
+    if (glfwGetKey(window, luaL_checkint(L, 1)) == GLFW_PRESS) {
+        lua_pushinteger(L, 1);
+        return 1;
+    }
+    return 0;
+}
+
 static const luaL_Reg api[] = {
     {"quit", quit},
     {"print", print},
     {"push_quad", push_quad},
+
+    /* Input */ 
+    {"key_pressed", key_pressed},
     {NULL, NULL},
 };
+
+static void keys_init(lua_State *L) {
+    int i;
+    char k[2];
+    k[1] = '\0';
+
+    lua_newtable(L);
+
+    for (i = 0; i < 'Z' + 1; i++) {
+        lua_pushinteger(L, i);
+
+        k[0] = (char)(i + 'a' - 'A');
+        lua_setfield(L, -2, k);
+    }
+    
+    lua_setglobal(L, "key");
+}
 
 void lua_api_init(lua_State *L) {
     const luaL_Reg *f;
@@ -81,4 +111,6 @@ void lua_api_init(lua_State *L) {
     }
 
     lua_setglobal(L, "core");
+
+    keys_init(L);
 }

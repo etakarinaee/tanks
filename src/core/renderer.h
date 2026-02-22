@@ -2,6 +2,7 @@
 #define RENDERER_H
 
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 struct vec2 {
     float x;
@@ -40,6 +41,7 @@ struct render_context {
 };
 
 extern struct render_context ctx;
+extern GLFWwindow* window;
 
 int renderer_init(struct render_context *ctx);
 

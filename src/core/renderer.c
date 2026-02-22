@@ -1,13 +1,12 @@
 #include "renderer.h"
 #include "archive.h"
 
-#include <glad/glad.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 struct render_context ctx;
+GLFWwindow* window;
 
 float rectangle_vertices[] = {
     /* POS              COLOR */

@@ -11,7 +11,6 @@
 
 #include "renderer.h"
 
-
 static lua_State *L;
 
 void resize_callback(GLFWwindow *window, int width, int height) {
@@ -22,7 +21,6 @@ void resize_callback(GLFWwindow *window, int width, int height) {
 }
 
 int main(void) {
-    GLFWwindow *window;
     FILE *test;
     int width, height;
     double current_time, last_time;
