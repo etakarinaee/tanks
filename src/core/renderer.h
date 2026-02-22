@@ -8,14 +8,21 @@ struct vec2 {
     float y;
 };
 
+struct color3 {
+    float r;
+    float g;
+    float b;
+};
+
 struct matrix {
     float m[16];
 };
 
 struct quad_data {
-    struct vec2 pos;
     float scale;
     float rotation;
+    struct vec2 pos;
+    struct color3 color;
 };
 
 struct render_context {
@@ -32,11 +39,13 @@ struct render_context {
     int quads_capacity;
 };
 
+extern struct render_context ctx;
+
 int renderer_init(struct render_context *ctx);
 
 void renderer_deinit(struct render_context *ctx);
 
-void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale, float rotation);
+void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale, float rotation, struct color3 c);
 
 void renderer_draw(struct render_context *ctx);
 

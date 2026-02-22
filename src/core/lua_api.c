@@ -3,6 +3,23 @@
 #include <luajit-2.1/lauxlib.h>
 #include <luajit-2.1/lua.h>
 
+#include "renderer.h"
+
+static struct vec2 check_vec2(lua_State *L, int idx) {
+    struct vec2 v;
+    luaL_checktype(L, idx, LUA_TTABLE);
+
+    lua_rawgeti(L, idx, 1);
+    v.x = (float)luaL_checknumber(L, -1);
+    lua_pop(L, 1);
+
+    lua_rawgeti(L, idx, 2);
+    v.y = (float)luaL_checknumber(L, -1);
+    lua_pop(L, 1);
+
+    return v;
+}
+
 static int quit(lua_State *L) {
     (void) L;
     exit(0);
@@ -16,9 +33,24 @@ static int print(lua_State *L) {
     return 0;
 }
 
+static int push_quad(lua_State *L) {
+    struct color3 color;
+    struct vec2 pos;
+    pos = check_vec2(L, 1);
+
+    color.r = 0.0f;
+    color.g = 0.0f;
+    color.b = 0.0f;
+
+    renderer_push_quad(&ctx, pos, 1.0f, 0.0f, color);
+
+    return 0;
+}
+
 static const luaL_Reg api[] = {
     {"quit", quit},
     {"print", print},
+    {"push_quad", push_quad},
     {NULL, NULL},
 };
 

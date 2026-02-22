@@ -3,7 +3,8 @@ end
 
 function game_update(delta_time)
     core.print("Hello, Word!")
+    core.push_quad({0.1, 0.1});
 end
 
-function game_draw()
+function game_quit()
 end

@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct render_context ctx;
+
 float rectangle_vertices[] = {
     /* POS              COLOR */
     0.5f, 0.5f, 1.0f, 1.0f,
@@ -135,7 +137,7 @@ void renderer_deinit(struct render_context *ctx) {
     if (ctx->quads) free(ctx->quads);
 }
 
-void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale, float rotation) {
+void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale, float rotation, struct color3 c) {
     struct quad_data data;
     struct quad_data *new_data;
 
@@ -160,6 +162,7 @@ void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale
     data.pos = pos;
     data.scale = scale;
     data.rotation = rotation;
+    data.color = c;
 
     ctx->quads[ctx->quads_count - 1] = data;
 }
@@ -168,11 +171,13 @@ void renderer_draw(struct render_context *ctx) {
     struct quad_data *data;
     struct matrix m;
     GLint uniform_matrix_loc;
+    GLint uniform_color_loc;
     int i;
 
     glUseProgram(ctx->program);
     glBindVertexArray(ctx->vao);
     uniform_matrix_loc = glGetUniformLocation(ctx->program, "u_matrix");
+    uniform_color_loc = glGetUniformLocation(ctx->program, "u_color");
 
     for (i = 0; i < ctx->quads_count; i++) {
         /* TODO: also suppor scale and rotations */
@@ -180,6 +185,7 @@ void renderer_draw(struct render_context *ctx) {
         math_matrix_translate(&m, data->pos.x, data->pos.y, 0.0f);
 
         glUniformMatrix4fv(uniform_matrix_loc, 1, GL_FALSE, m.m);
+        glUniform3f(uniform_color_loc, data->color.r, data->color.g, data->color.b);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }
 }

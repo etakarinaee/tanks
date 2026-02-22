@@ -24,7 +24,6 @@ void resize_callback(GLFWwindow *window, int width, int height) {
 int main(void) {
     GLFWwindow *window;
     FILE *test;
-    struct render_context ctx;
     int width, height;
     double current_time, last_time;
     double delta_time;
@@ -86,6 +85,7 @@ int main(void) {
 
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
             struct vec2 pos;
+            struct color3 color;
             double x; /* Not sure about the c89 std in this next lines here */
             double y;
             glfwGetCursorPos(window, &x, &y);
@@ -95,9 +95,11 @@ int main(void) {
             pos.x = (x / ctx.width) * 2.0f - 1.0f;
             pos.y = -((y / ctx.height) * 2.0f - 1.0f);
 
-            /* printf("X: %f Y: %f\n", pos.x, pos.y); */
+            color.r = 0.2f;
+            color.g = 1.0f;
+            color.b = 0.3f;
 
-            renderer_push_quad(&ctx, pos, 1.0f, 0.0f);
+            renderer_push_quad(&ctx, pos, 1.0f, 0.0f, color);
         }
 
         renderer_draw(&ctx);
