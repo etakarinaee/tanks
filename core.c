@@ -5,7 +5,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <luajit-2.1/lua.h>
+
+#include <core_archive.h>
+#include <core_lua.h>
+
 #include <core_renderer.h>
+
+/* where the game data is stored */
+#define SAUSAGES_DATA "sausages.arc"
+/* entrypoint in lua */
+#define SAUSAGES_ENTRY "game.lua"
+
+static lua_State *L;
 
 void resize_callback(GLFWwindow* window, int width, int height) {
     struct render_context* ctx = (struct render_context*)glfwGetWindowUserPointer(window);
@@ -15,6 +27,16 @@ void resize_callback(GLFWwindow* window, int width, int height) {
 }
 
 int main() {
+    FILE* test;
+
+    /* check for game data before doing anything */
+    test = fopen(SAUSAGES_DATA, "rb");
+    if (!test) {
+        fprintf(stderr, "game data not available\n");
+        return 1;
+    }
+    fclose(test);
+
     if (!glfwInit()) {
         fprintf(stderr, "failed to init glfw\n");
         return EXIT_FAILURE;
@@ -28,13 +50,34 @@ int main() {
     glfwMakeContextCurrent(window);
     gladLoadGL();
 
+    printf("OpenGL %s\n", glGetString(GL_VERSION));
+
     struct render_context ctx = {0};
     glfwSetFramebufferSizeCallback(window, resize_callback);
     glfwSetWindowUserPointer(window, &ctx);
 
+    /* Init Lua */
+    L = lua_init(SAUSAGES_DATA, SAUSAGES_ENTRY);
+    if (!L) {
+        fprintf(stderr, "lua_init()\n");
+
+        return 1;
+    }
+    lua_call_init(L);
+
     renderer_init(&ctx);
 
+    double curr_time = glfwGetTime();
+    double last_time = curr_time;
+
     while (!glfwWindowShouldClose(window)) {
+        double delta_time = curr_time - last_time;
+        last_time = curr_time;
+        curr_time = glfwGetTime();
+
+        L = lua_reload(L, SAUSAGES_DATA, SAUSAGES_ENTRY);
+        lua_call_update(L, delta_time);
+
         glClear(GL_COLOR_BUFFER_BIT);
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
 
@@ -62,6 +105,8 @@ int main() {
 
     renderer_deinit(&ctx);
     glfwTerminate();
+
+    lua_quit(L);
 
     return 0;
 }
