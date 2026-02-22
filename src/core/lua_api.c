@@ -74,6 +74,45 @@ static int key_pressed(lua_State *L) {
     return 0;
 }
 
+static int key_down(lua_State *L) {
+    if (glfwGetKey(window, luaL_checkint(L, 1)) != GLFW_RELEASE) {
+        lua_pushinteger(L, 1);
+        return 1;
+    }
+    return 0;
+}
+
+static int mouse_pressed(lua_State *L) {
+    if (glfwGetMouseButton(window, luaL_checkint(L, 1)) == GLFW_PRESS) {
+        lua_pushinteger(L, 1);
+        return 1;
+    }
+    return 0;
+}
+
+static int mouse_down(lua_State *L) {
+    if (glfwGetMouseButton(window, luaL_checkint(L, 1)) != GLFW_RELEASE) {
+        lua_pushinteger(L, 1);
+        return 1;
+    }
+    return 0;
+}
+
+static int mouse_pos(lua_State *L) {
+    double x;
+    double y;
+    glfwGetCursorPos(window, &x, &y);
+
+    lua_newtable(L);
+    lua_pushnumber(L, x);
+    lua_setfield(L, -2, "x");
+
+    lua_pushnumber(L, y);
+    lua_setfield(L, -2, "y");
+
+    return 1;
+}
+
 static const luaL_Reg api[] = {
     {"quit", quit},
     {"print", print},
@@ -81,6 +120,10 @@ static const luaL_Reg api[] = {
 
     /* Input */ 
     {"key_pressed", key_pressed},
+    {"key_down", key_down},
+    {"mouse_pressed", mouse_pressed},
+    {"mouse_down", mouse_down},
+    {"mouse_pos", mouse_pos},
     {NULL, NULL},
 };
 
@@ -91,14 +134,67 @@ static void keys_init(lua_State *L) {
 
     lua_newtable(L);
 
-    for (i = 0; i < 'Z' + 1; i++) {
+    for (i = 'A'; i <= 'Z'; i++) {
         lua_pushinteger(L, i);
-
         k[0] = (char)(i + 'a' - 'A');
         lua_setfield(L, -2, k);
     }
-    
+
+    for (i = 'A'; i <= 'Z'; i++) {
+        lua_pushinteger(L, i);
+        k[0] = (char)i;
+        lua_setfield(L, -2, k);
+    }
+
+    for (i = '0'; i <= '9'; i++) {
+        lua_pushinteger(L, i);
+        k[0] = (char)i;
+        lua_setfield(L, -2, k);
+    }
+
+    lua_pushinteger(L, ' ');
+    lua_setfield(L, -2, "space");
+
+    lua_pushinteger(L, '\r');
+    lua_setfield(L, -2, "return");
+
+    lua_pushinteger(L, '\n');
+    lua_setfield(L, -2, "enter");
+
+    lua_pushinteger(L, '\t');
+    lua_setfield(L, -2, "tab");
+
+    lua_pushinteger(L, 27);
+    lua_setfield(L, -2, "escape");
+
+    lua_pushinteger(L, 127);
+    lua_setfield(L, -2, "backspace");
+
     lua_setglobal(L, "key");
+}
+
+static const char* mouse_names[] = {
+    "left",
+    "right",
+    "middle",
+    "button_4",
+    "button_5",
+    "button_6",
+    "button_7",
+    "button_8",
+};
+
+static void mouse_init(lua_State *L) {
+    int i;
+
+    lua_newtable(L);
+
+    for (i = 0; i < 8; i++) {
+        lua_pushinteger(L, i);
+        lua_setfield(L, -2, mouse_names[i]);
+    }
+
+    lua_setglobal(L, "mouse");
 }
 
 void lua_api_init(lua_State *L) {
@@ -113,4 +209,5 @@ void lua_api_init(lua_State *L) {
     lua_setglobal(L, "core");
 
     keys_init(L);
+    mouse_init(L);
 }
