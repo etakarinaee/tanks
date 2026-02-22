@@ -34,10 +34,16 @@ struct quad_data {
     struct color3 color;
 };
 
+struct camera {
+    struct vec2 pos;
+    float zoom;
+};
+
 struct render_context {
     int width;
     int height;
     GLFWwindow *window;
+    struct camera camera;
 
     GLuint vao;
     GLuint vbo;
@@ -71,5 +77,7 @@ void math_matrix_scale(struct matrix *m, float x, float y, float z);
 /* Angle in degrees */
 void math_matrix_rotate_2d(struct matrix* m, float angle);
 void math_matrix_mul(struct matrix* out, struct matrix* a, struct matrix* b);
+void math_matrix_orthographic(struct matrix* m, float left, float right, float bottom, float top, float near, float far);
+void math_matrix_get_orthographic(struct render_context *r, struct matrix* m);
 
 #endif

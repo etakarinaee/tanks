@@ -71,7 +71,7 @@ static int push_quad(lua_State *L) {
     const struct color3 color = check_color3(L, 2);
     const texture_id tex = luaL_checkint(L, 3);
 
-    renderer_push_quad(&ctx, pos, 1.0f, 0.0f, color, tex);
+    renderer_push_quad(&ctx, pos, 300.0f, 0.0f, color, tex);
 
     return 0;
 }

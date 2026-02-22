@@ -129,6 +129,9 @@ int renderer_init(struct render_context *r) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
+    r->camera.pos = (struct vec2){0.0f, 0.0f};
+    r->camera.zoom = 1.0f;
+
     r->quads = calloc(2, sizeof(struct quad_data));
     r->quads_count = 0;
     r->quads_capacity = 2;
@@ -164,6 +167,9 @@ void renderer_push_quad(struct render_context *r, const struct vec2 pos, const f
 void renderer_draw(struct render_context *r) {
     glBindVertexArray(r->vao);
 
+    struct matrix cam_m;
+    math_matrix_get_orthographic(r, &cam_m);
+
     for (size_t i = 0; i < r->quads_count; i++) {
         const struct quad_data *data = &r->quads[i];
 
@@ -183,15 +189,20 @@ void renderer_draw(struct render_context *r) {
         struct matrix m;
         math_matrix_mul(&m, &translate_m, &scale_rot_m);
 
-        GLint uniform_matrix_loc;
+        GLint uniform_matrix_model_loc;
+        GLint uniform_matrix_cam_loc;
         if (data->tex == CORE_RENDERER_QUAD_NO_TEXTURE) {
             glUseProgram(r->quad_program);
-            uniform_matrix_loc = glGetUniformLocation(r->quad_program, "u_matrix");
+            uniform_matrix_model_loc = glGetUniformLocation(r->quad_program, "u_model");
+            uniform_matrix_cam_loc = glGetUniformLocation(r->quad_program, "u_proj");
+
             const GLint uniform_color_loc = glGetUniformLocation(r->quad_program, "u_color");
             glUniform3f(uniform_color_loc, data->color.r, data->color.g, data->color.b);
+
         } else {
             glUseProgram(r->tex_program);
-            uniform_matrix_loc = glGetUniformLocation(r->tex_program, "u_matrix");
+            uniform_matrix_model_loc = glGetUniformLocation(r->tex_program, "u_model");
+            uniform_matrix_cam_loc = glGetUniformLocation(r->tex_program, "u_proj");
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, data->tex);
@@ -199,7 +210,8 @@ void renderer_draw(struct render_context *r) {
             glUniform1i(sampler_loc, 0);
         }
 
-        glUniformMatrix4fv(uniform_matrix_loc, 1, GL_FALSE, m.m);
+        glUniformMatrix4fv(uniform_matrix_model_loc, 1, GL_FALSE, m.m);
+        glUniformMatrix4fv(uniform_matrix_cam_loc, 1, GL_FALSE, cam_m.m);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }
 
@@ -277,3 +289,21 @@ void math_matrix_mul(struct matrix *out, struct matrix *a, struct matrix *b) {
         }
     }
 }
+
+void math_matrix_orthographic(struct matrix *m, float left, float right, float bottom, float top, float near, float far) {
+    *m = (struct matrix){ .m = {
+        [0] = 2.0f / (right - left), [5] = 2.0f / (top - bottom),
+        [10] = 2.0f / (near - far), [15] = 1.0f,
+        [12] = (left + right) / (left - right),
+        [13] = (bottom + top) / (bottom - top),
+        [14] = (near + far) / (near - far),
+    }};
+}
+
+void math_matrix_get_orthographic(struct render_context* r, struct matrix *m) {
+    float half_w = (r->width / r->camera.zoom) * 0.5f;
+    float half_h = (r->height / r->camera.zoom) * 0.5f;
+
+    math_matrix_orthographic(m, -half_w, half_w, -half_h, half_h, -1.0f, 1.0f);
+}
+
