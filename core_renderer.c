@@ -214,11 +214,7 @@ void math_matrix_identity(struct matrix *m) {
 }
 
 void math_matrix_translate(struct matrix *m, float x, float y, float z) {
-    memset(m, 0, sizeof(struct matrix));
-    m->m[0] = 1.0f;
-    m->m[5] = 1.0f;
-    m->m[10] = 1.0f;
-    m->m[15] = 1.0f;
+    math_matrix_identity(m);
 
     m->m[12] = x;
     m->m[13] = y;

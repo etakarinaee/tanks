@@ -27,7 +27,11 @@ void resize_callback(GLFWwindow* window, int width, int height) {
 }
 
 int main() {
+    GLFWwindow* window;
     FILE* test;
+    struct render_context ctx;
+    double curr_time, last_time;
+    double delta_time;
 
     /* check for game data before doing anything */
     test = fopen(SAUSAGES_DATA, "rb");
@@ -42,7 +46,7 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    GLFWwindow* window = glfwCreateWindow(1200, 800, "Sausages", NULL, NULL);
+    window = glfwCreateWindow(1200, 800, "Sausages", NULL, NULL);
     if (!window) {
         fprintf(stderr, "failed to create window\n");
         return EXIT_FAILURE;
@@ -52,7 +56,6 @@ int main() {
 
     printf("OpenGL %s\n", glGetString(GL_VERSION));
 
-    struct render_context ctx = {0};
     glfwSetFramebufferSizeCallback(window, resize_callback);
     glfwSetWindowUserPointer(window, &ctx);
 
@@ -67,11 +70,9 @@ int main() {
 
     renderer_init(&ctx);
 
-    double curr_time = glfwGetTime();
-    double last_time = curr_time;
 
     while (!glfwWindowShouldClose(window)) {
-        double delta_time = curr_time - last_time;
+        delta_time = curr_time - last_time;
         last_time = curr_time;
         curr_time = glfwGetTime();
 
