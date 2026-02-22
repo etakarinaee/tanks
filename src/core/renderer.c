@@ -13,9 +13,9 @@ GLFWwindow* window;
 float rectangle_vertices[] = {
     /* POS              COLOR    TEXCOORD*/
     0.5f, 0.5f,     1.0f, 1.0f,  1.0f, 1.0f,
-    0.5f, -0.5f,    1.0f, 0.0f,  0.0f, 1.0f,
+    0.5f, -0.5f,    1.0f, 0.0f,  1.0f, 0.0f,
     -0.5f, -0.5f,   0.0f, 0.0f,  0.0f, 0.0f,
-    -0.5f, 0.5f,    0.0f, 1.0f,  1.0f, 0.0f,
+    -0.5f, 0.5f,    0.0f, 1.0f,  0.0f, 1.0f,
 };
 
 unsigned int rectangle_indices[] = {
@@ -208,6 +208,7 @@ void renderer_draw(struct render_context *ctx) {
         glUniformMatrix4fv(uniform_matrix_loc, 1, GL_FALSE, m.m);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }
+    ctx->quads_count = 0;
 }
 
 texture_id renderer_load_texture(const char *path) {
