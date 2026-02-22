@@ -6,10 +6,11 @@
 #include <string.h>
 
 float rectangle_vertices[] = {
-     0.5f,  0.5f, 0.0f,     1.0f, 1.0f,     0.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, 0.0f,     1.0f, 0.0f,     0.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, 0.0f,     0.0f, 0.0f,     0.0f, 0.0f, 1.0f,
-    -0.5f,  0.5f, 0.0f,     0.0f, 1.0f,     0.0f, 0.0f, 1.0f,
+    /* POS              COLOR */
+     0.5f,  0.5f,      1.0f, 1.0f,    
+     0.5f, -0.5f,      1.0f, 0.0f,     
+    -0.5f, -0.5f,      0.0f, 0.0f,    
+    -0.5f,  0.5f,      0.0f, 1.0f,     
 };
 
 unsigned int rectangle_indices[] = {
@@ -21,6 +22,7 @@ static char* load_shader(const char* path) {
     FILE* file;
     char* buf;
     long size;
+    size_t bytes_read;
 
     file = fopen(path, "rb");
     if (!file) {
@@ -33,7 +35,18 @@ static char* load_shader(const char* path) {
     rewind(file);
 
     buf = malloc(size + 1);
-    fread(buf, 1, size, file);
+
+    bytes_read = fread(buf, 1, size, file);
+    if (bytes_read != size) {
+        if (feof(file)) {
+            fprintf(stderr, "loading shader: reached eof before reading full buffer\n");
+        }
+        else if (ferror(file)) {
+            fprintf(stderr, "fread failed\n");
+            return NULL;
+        }
+    }
+
     buf[size] = '\0';
     fclose(file);
 
@@ -52,17 +65,16 @@ static void buffers_init(struct render_context* ctx) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(rectangle_indices), rectangle_indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
-    glEnableVertexAttribArray(2);
 }
 
 static int program_init(struct render_context* ctx) {
+    int error = 0;
     int success;
     char info_log[512];
 
@@ -81,8 +93,8 @@ static int program_init(struct render_context* ctx) {
     if(!success) {
         glGetShaderInfoLog(vertex_id, 512, NULL, info_log);
         fprintf(stderr, "Vertex Shader Compilation Failed: %s!\n", info_log);
-        free((void*)vertex_str);
-        return 1;
+        error = 1;
+        goto end;
     } 
 
     /* Fragment Shader */
@@ -95,9 +107,9 @@ static int program_init(struct render_context* ctx) {
 
     if(!success) {
         glGetShaderInfoLog(fragment_id, 512, NULL, info_log);
-        fprintf(stderr, "Vertex Shader Compilation Failed: %s!\n", info_log);
-        free((void*)fragment_str);
-        return 1;
+        fprintf(stderr, "Fragment Shader Compilation Failed: %s!\n", info_log);
+        error = 1;
+        goto end;
     }
 
     ctx->program = glCreateProgram();
@@ -109,20 +121,20 @@ static int program_init(struct render_context* ctx) {
     if (!success) {
         glGetProgramInfoLog(ctx->program, 512, NULL, info_log);
         fprintf(stderr, "failed to link shaders: %s\n", info_log);
-        free((void*)vertex_str);
-        free((void*)fragment_str);
-        return 1;
+        error = 1;
+        goto end;
     }
 
     glUseProgram(ctx->program);
 
+end:
     glDeleteShader(vertex_id);
     glDeleteShader(fragment_id);
 
     free((void*)vertex_str);
     free((void*)fragment_str);
 
-    return 0;
+    return error;
 }
 
 int renderer_init(struct render_context* ctx) {
@@ -156,7 +168,13 @@ void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale
             ctx->quads_capacity *= 2;
         }
 
-        ctx->quads = realloc(ctx->quads, ctx->quads_capacity * sizeof(struct quad_data));
+        struct quad_data* new_data = realloc(ctx->quads, ctx->quads_capacity * sizeof(struct quad_data));
+        if (!new_data) {
+            fprintf(stderr, "out of memory!\n");
+            return;
+        }
+
+        ctx->quads = new_data;
     }
     ctx->quads_count++;
 
@@ -170,7 +188,7 @@ void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale
 void renderer_draw(struct render_context *ctx) {
     struct quad_data* data;
     struct matrix m;
-    GLuint uniform_matrix_loc;
+    GLint uniform_matrix_loc;
     int i;
 
     glUseProgram(ctx->program);
@@ -187,7 +205,7 @@ void renderer_draw(struct render_context *ctx) {
     }
 }
 
-void math_matrix_indentity(struct matrix *m) {
+void math_matrix_identity(struct matrix *m) {
     memset(m, 0, sizeof(struct matrix));
     m->m[0] = 1.0f;
     m->m[5] = 1.0f;
