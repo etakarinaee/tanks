@@ -1,7 +1,11 @@
 .idea
-cmake-build-debug
 tanks
-CMakeFiles
+*.json
+.cache/
 *.cmake
-Makefile
+CMakeFiles/
 CMakeCache.txt
+Makefile
+arc
+sausages
+*.a
