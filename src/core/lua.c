@@ -1,5 +1,5 @@
-#include "core_lua.h"
-#include "core_lua_api.h"
+#include "lua.h"
+#include "lua_api.h"
 
 #include <luajit-2.1/lualib.h>
 #include <luajit-2.1/lauxlib.h>
@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#include "core_archive.h"
+#include "archive.h"
 
 static long last_mtime;
 

@@ -1,5 +1,7 @@
+#include "renderer.h"
+#include "archive.h"
 
-#include <core_renderer.h>
+#include <glad/glad.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,10 +9,10 @@
 
 float rectangle_vertices[] = {
     /* POS              COLOR */
-     0.5f,  0.5f,      1.0f, 1.0f,    
-     0.5f, -0.5f,      1.0f, 0.0f,     
-    -0.5f, -0.5f,      0.0f, 0.0f,    
-    -0.5f,  0.5f,      0.0f, 1.0f,     
+    0.5f, 0.5f, 1.0f, 1.0f,
+    0.5f, -0.5f, 1.0f, 0.0f,
+    -0.5f, -0.5f, 0.0f, 0.0f,
+    -0.5f, 0.5f, 0.0f, 1.0f,
 };
 
 unsigned int rectangle_indices[] = {
@@ -18,42 +20,7 @@ unsigned int rectangle_indices[] = {
     1, 2, 3
 };
 
-static char* load_shader(const char* path) {
-    FILE* file;
-    char* buf;
-    long size;
-    size_t bytes_read;
-
-    file = fopen(path, "rb");
-    if (!file) {
-        fprintf(stderr, "failed to load shader: %s\n", path);
-        return NULL;
-    }
-
-    fseek(file, 0, SEEK_END);
-    size = ftell(file);
-    rewind(file);
-
-    buf = malloc(size + 1);
-
-    bytes_read = fread(buf, 1, size, file);
-    if ((int)bytes_read != size) {
-        if (feof(file)) {
-            fprintf(stderr, "loading shader: reached eof before reading full buffer\n");
-        }
-        else if (ferror(file)) {
-            fprintf(stderr, "fread failed\n");
-            return NULL;
-        }
-    }
-
-    buf[size] = '\0';
-    fclose(file);
-
-    return buf;
-}
-
-static void buffers_init(struct render_context* ctx) {
+static void buffers_init(struct render_context *ctx) {
     glGenVertexArrays(1, &ctx->vao);
     glBindVertexArray(ctx->vao);
 
@@ -65,25 +32,25 @@ static void buffers_init(struct render_context* ctx) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(rectangle_indices), rectangle_indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) 0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) (2 * sizeof(float)));
     glEnableVertexAttribArray(1);
-
 }
 
-static int program_init(struct render_context* ctx) {
+static int program_init(struct render_context *ctx) {
     int error = 0;
     int success;
     char info_log[512];
+    unsigned long len;
 
-    char* vertex_str;
-    char* fragment_str;
-    GLuint vertex_id, fragment_id;
+    char *vertex_str = NULL;
+    char *fragment_str = NULL;
+    GLuint vertex_id = 0, fragment_id = 0;
 
     /* Vertex Shader */
-    vertex_str = load_shader("shaders/tri.vert");
+    vertex_str = archive_read_alloc(SAUSAGES_DATA, "tri.vert", &len);
     vertex_id = glCreateShader(GL_VERTEX_SHADER);
 
     if (!vertex_str) {
@@ -91,33 +58,33 @@ static int program_init(struct render_context* ctx) {
         goto end;
     }
 
-    glShaderSource(vertex_id, 1, (const GLchar* const*)&vertex_str, NULL);
+    glShaderSource(vertex_id, 1, (const GLchar * const*) &vertex_str, NULL);
     glCompileShader(vertex_id);
 
     glGetShaderiv(vertex_id, GL_COMPILE_STATUS, &success);
 
-    if(!success) {
+    if (!success) {
         glGetShaderInfoLog(vertex_id, 512, NULL, info_log);
         fprintf(stderr, "Vertex Shader Compilation Failed: %s!\n", info_log);
         error = 1;
         goto end;
-    } 
+    }
 
     /* Fragment Shader */
-    fragment_str = load_shader("shaders/tri.frag");
+    fragment_str = archive_read_alloc(SAUSAGES_DATA, "tri.frag", &len);
     fragment_id = glCreateShader(GL_FRAGMENT_SHADER);
-    
+
     if (!fragment_str) {
         error = 1;
         goto end;
     }
 
-    glShaderSource(fragment_id, 1, (const GLchar* const*)&fragment_str, NULL);
+    glShaderSource(fragment_id, 1, (const GLchar * const*) &fragment_str, NULL);
     glCompileShader(fragment_id);
 
     glGetShaderiv(fragment_id, GL_COMPILE_STATUS, &success);
 
-    if(!success) {
+    if (!success) {
         glGetShaderInfoLog(fragment_id, 512, NULL, info_log);
         fprintf(stderr, "Fragment Shader Compilation Failed: %s!\n", info_log);
         error = 1;
@@ -143,13 +110,13 @@ end:
     glDeleteShader(vertex_id);
     glDeleteShader(fragment_id);
 
-    free((void*)vertex_str);
-    free((void*)fragment_str);
+    free(vertex_str);
+    free(fragment_str);
 
     return error;
 }
 
-int renderer_init(struct render_context* ctx) {
+int renderer_init(struct render_context *ctx) {
     buffers_init(ctx);
     if (program_init(ctx)) {
         fprintf(stderr, "failed to init shaders!\n");
@@ -170,14 +137,13 @@ void renderer_deinit(struct render_context *ctx) {
 
 void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale, float rotation) {
     struct quad_data data;
-    struct quad_data* new_data;
+    struct quad_data *new_data;
 
     /* TODO: error checking etc.. */
     if (ctx->quads_count + 1 > ctx->quads_capacity) {
         if (ctx->quads_capacity == 0) {
             ctx->quads_capacity = 2;
-        } 
-        else {
+        } else {
             ctx->quads_capacity *= 2;
         }
 
@@ -199,7 +165,7 @@ void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale
 }
 
 void renderer_draw(struct render_context *ctx) {
-    struct quad_data* data;
+    struct quad_data *data;
     struct matrix m;
     GLint uniform_matrix_loc;
     int i;
@@ -207,7 +173,7 @@ void renderer_draw(struct render_context *ctx) {
     glUseProgram(ctx->program);
     glBindVertexArray(ctx->vao);
     uniform_matrix_loc = glGetUniformLocation(ctx->program, "u_matrix");
-    
+
     for (i = 0; i < ctx->quads_count; i++) {
         /* TODO: also suppor scale and rotations */
         data = &ctx->quads[i];
@@ -241,4 +207,3 @@ void math_matrix_scale(struct matrix *m, float x, float y, float z) {
     m->m[10] = z;
     m->m[15] = 1.0f;
 }
-

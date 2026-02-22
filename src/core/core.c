@@ -1,36 +1,32 @@
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <luajit-2.1/lua.h>
 
-#include <core_archive.h>
-#include <core_lua.h>
+#include "archive.h"
+#include "lua.h"
 
-#include <core_renderer.h>
+#include "renderer.h"
 
-/* where the game data is stored */
-#define SAUSAGES_DATA "sausages.arc"
-/* entrypoint in lua */
-#define SAUSAGES_ENTRY "game.lua"
 
 static lua_State *L;
 
-void resize_callback(GLFWwindow* window, int width, int height) {
-    struct render_context* ctx = (struct render_context*)glfwGetWindowUserPointer(window);
+void resize_callback(GLFWwindow *window, int width, int height) {
+    struct render_context *ctx = glfwGetWindowUserPointer(window);
     ctx->width = width;
     ctx->height = height;
     glViewport(0, 0, width, height);
 }
 
-int main() {
-    GLFWwindow* window;
-    FILE* test;
+int main(void) {
+    GLFWwindow *window;
+    FILE *test;
     struct render_context ctx;
-    double curr_time, last_time;
+    int width, height;
+    double current_time, last_time;
     double delta_time;
 
     /* check for game data before doing anything */
@@ -54,6 +50,13 @@ int main() {
     glfwMakeContextCurrent(window);
     gladLoadGL();
 
+    glfwGetFramebufferSize(window, &width, &height);
+
+    ctx.width = width;
+    ctx.height = height;
+
+    glViewport(0, 0, width, height);
+
     printf("OpenGL %s\n", glGetString(GL_VERSION));
 
     glfwSetFramebufferSizeCallback(window, resize_callback);
@@ -70,11 +73,10 @@ int main() {
 
     renderer_init(&ctx);
 
-
     while (!glfwWindowShouldClose(window)) {
-        delta_time = curr_time - last_time;
-        last_time = curr_time;
-        curr_time = glfwGetTime();
+        delta_time = current_time - last_time;
+        last_time = current_time;
+        current_time = glfwGetTime();
 
         L = lua_reload(L, SAUSAGES_DATA, SAUSAGES_ENTRY);
         lua_call_update(L, delta_time);
@@ -90,7 +92,7 @@ int main() {
 
             /* convert mouse pos from window coords to 0 to 1 by dividing with width 
                 than convert to -1 to 1 by multiply 2 and then subtract -1 */
-            pos.x = (x / ctx.width) * 2.0f - 1.0f; 
+            pos.x = (x / ctx.width) * 2.0f - 1.0f;
             pos.y = -((y / ctx.height) * 2.0f - 1.0f);
 
             /* printf("X: %f Y: %f\n", pos.x, pos.y); */
@@ -111,5 +113,3 @@ int main() {
 
     return 0;
 }
-
-
