@@ -37,7 +37,7 @@ static char* load_shader(const char* path) {
     buf = malloc(size + 1);
 
     bytes_read = fread(buf, 1, size, file);
-    if (bytes_read != size) {
+    if ((int)bytes_read != size) {
         if (feof(file)) {
             fprintf(stderr, "loading shader: reached eof before reading full buffer\n");
         }
@@ -158,6 +158,7 @@ void renderer_deinit(struct render_context *ctx) {
 
 void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale, float rotation) {
     struct quad_data data;
+    struct quad_data* new_data;
 
     /* TODO: error checking etc.. */
     if (ctx->quads_count + 1 > ctx->quads_capacity) {
@@ -168,7 +169,7 @@ void renderer_push_quad(struct render_context *ctx, struct vec2 pos, float scale
             ctx->quads_capacity *= 2;
         }
 
-        struct quad_data* new_data = realloc(ctx->quads, ctx->quads_capacity * sizeof(struct quad_data));
+        new_data = realloc(ctx->quads, ctx->quads_capacity * sizeof(struct quad_data));
         if (!new_data) {
             fprintf(stderr, "out of memory!\n");
             return;

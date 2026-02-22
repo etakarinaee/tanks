@@ -83,15 +83,15 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
 
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            struct vec2 pos;
             double x; /* Not sure about the c89 std in this next lines here */
             double y;
             glfwGetCursorPos(window, &x, &y);
-            struct vec2 pos;
 
             /* convert mouse pos from window coords to 0 to 1 by dividing with width 
-                than convert to -1 to 1 by multiply 2 and then subtract -1
-            */
-            pos = (struct vec2){ (x / ctx.width) * 2.0f - 1.0f, -((y / ctx.height) * 2.0f - 1.0f) };
+                than convert to -1 to 1 by multiply 2 and then subtract -1 */
+            pos.x = (x / ctx.width) * 2.0f - 1.0f; 
+            pos.y = -((y / ctx.height) * 2.0f - 1.0f);
 
             /* printf("X: %f Y: %f\n", pos.x, pos.y); */
 
