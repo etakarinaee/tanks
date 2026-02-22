@@ -16,7 +16,8 @@ add_custom_command(
 
 add_custom_target(shaders ALL DEPENDS ${CMAKE_BINARY_DIR}/sausages.arc)
 
-add_executable(sausages core.c core_archive.c core_lua.c core_lua_api.c)
+add_executable(sausages core.c core_archive.c core_lua.c core_lua_api.c core_renderer.c glad.c)
 add_dependencies(sausages shaders)
 
-target_link_libraries(sausages GL GLU GLEW glut luajit-5.1 m dl)
+target_include_directories(sausages PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(sausages GL glfw luajit-5.1 m dl)

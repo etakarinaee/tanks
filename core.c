@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "renderer.h"
+#include <core_renderer.h>
 
 void resize_callback(GLFWwindow* window, int width, int height) {
     struct render_context* ctx = (struct render_context*)glfwGetWindowUserPointer(window);

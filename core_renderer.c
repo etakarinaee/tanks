@@ -1,5 +1,5 @@
 
-#include "renderer.h"
+#include <core_renderer.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,7 +71,7 @@ static int program_init(struct render_context* ctx) {
     GLuint vertex_id, fragment_id;
 
     /* Vertex Shader */
-    vertex_str = load_shader("tri.vert");
+    vertex_str = load_shader("shaders/tri.vert");
     vertex_id = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex_id, 1, (const GLchar* const*)&vertex_str, NULL);
     glCompileShader(vertex_id);
@@ -86,7 +86,7 @@ static int program_init(struct render_context* ctx) {
     } 
 
     /* Fragment Shader */
-    fragment_str = load_shader("tri.frag");
+    fragment_str = load_shader("shaders/tri.frag");
     fragment_id = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment_id, 1, (const GLchar* const*)&fragment_str, NULL);
     glCompileShader(fragment_id);
@@ -127,7 +127,10 @@ static int program_init(struct render_context* ctx) {
 
 int renderer_init(struct render_context* ctx) {
     buffers_init(ctx);
-    program_init(ctx);
+    if (program_init(ctx)) {
+        fprintf(stderr, "failed to init shaders!\n");
+        return 1;
+    }
 
     /* TODO: replace with actualy dym array */
     ctx->quads = calloc(2, sizeof(struct quad_data));
