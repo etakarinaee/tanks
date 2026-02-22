@@ -74,9 +74,10 @@ int main(void) {
     tex = renderer_load_texture("../test.png");
 
     while (!glfwWindowShouldClose(window)) {
+        current_time = glfwGetTime();
+
         delta_time = current_time - last_time;
         last_time = current_time;
-        current_time = glfwGetTime();
 
         L = lua_reload(L, SAUSAGES_DATA, SAUSAGES_ENTRY);
         lua_call_update(L, delta_time);
