@@ -10,8 +10,12 @@ function game_update(dt)
     while ev do
         if ev.type == core.net_event.connect then
             core.print("+ client " .. ev.id)
+            server:send(ev.id, "welcome")
         elseif ev.type == core.net_event.disconnect then
             core.print("- client " .. ev.id)
+        elseif ev.type == core.net_event.data then
+            core.print("client " .. ev.id .. ": " .. ev.data)
+            server:broadcast(ev.data)
         end
         ev = server:poll()
     end

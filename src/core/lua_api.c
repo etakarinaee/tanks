@@ -137,6 +137,13 @@ static int push_event(lua_State *L, const struct net_event *event) {
     lua_pushinteger(L, event->client_id);
     lua_setfield(L, -2, "id");
 
+
+    if (event->type == NET_EVENT_DATA && event->len > 0) {
+        lua_pushlstring(L, (const char *) event->data, event->len);
+        lua_setfield(L, -2, "data");
+    }
+
+
     return 1;
 }
 
@@ -183,8 +190,35 @@ static int l_server_close(lua_State *L) {
     return 0;
 }
 
+static int l_server_send(lua_State *L) {
+    struct net_server **sp = luaL_checkudata(L, 1, SERVER_MT);
+    const uint32_t client_id = (uint32_t) luaL_checkint(L, 2);
+    size_t len;
+    const char *data = luaL_checklstring(L, 3, &len);
+
+    if (*sp) {
+        net_server_send(*sp, client_id, data, (uint32_t) len);
+    }
+
+    return 0;
+}
+
+static int l_server_broadcast(lua_State *L) {
+    struct net_server **sp = luaL_checkudata(L, 1, SERVER_MT);
+    size_t len;
+    const char *data = luaL_checklstring(L, 2, &len);
+
+    if (*sp) {
+        net_server_broadcast(*sp, data, (uint32_t) len);
+    }
+
+    return 0;
+}
+
 static const luaL_Reg server_methods[] = {
     {"poll", l_server_poll},
+    {"send", l_server_send},
+    {"broadcast", l_server_broadcast},
     {"close", l_server_close},
     {"__gc", l_server_close},
     {NULL,NULL},
@@ -240,14 +274,26 @@ static int l_client_close(lua_State *L) {
     return 0;
 }
 
+static int l_client_send(lua_State *L) {
+    struct net_client **cp = luaL_checkudata(L, 1, CLIENT_MT);
+    size_t len;
+    const char *data = luaL_checklstring(L, 2, &len);
+
+    if (*cp && (*cp)->connected) {
+        net_client_send(*cp, data, (uint32_t) len);
+    }
+
+    return 0;
+}
+
 static const luaL_Reg client_methods[] = {
     {"poll", l_client_poll},
+    {"send", l_client_send},
     {"connected", l_client_connected},
     {"close", l_client_close},
     {"__gc", l_client_close},
     {NULL, NULL}
 };
-
 
 static void meta(lua_State *L, const char *name, const luaL_Reg *methods) {
     luaL_newmetatable(L, name);
@@ -376,6 +422,8 @@ void lua_api_init(lua_State *L) {
     lua_setfield(L, -2, "connect");
     lua_pushinteger(L, NET_EVENT_DISCONNECT);
     lua_setfield(L, -2, "disconnect");
+    lua_pushinteger(L, NET_EVENT_DATA);
+    lua_setfield(L, -2, "data");
     lua_setfield(L, -2, "net_event");
 
     lua_setglobal(L, "core");

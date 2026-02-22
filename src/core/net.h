@@ -7,11 +7,14 @@
 #define NET_TIMEOUT 10.0
 // this is the same idea as a header, used to ignore any packages that do not belong to the game
 #define NET_PROTOCOL_ID 0x696969Eu
+// maximum payload size
+#define NET_PAYLOAD 1400
 
 enum {
     NET_EVENT_NONE,
     NET_EVENT_CONNECT,
     NET_EVENT_DISCONNECT,
+    NET_EVENT_DATA,
 };
 
 struct net_addr {
@@ -23,7 +26,7 @@ struct net_event {
     uint32_t type;
     uint32_t client_id;
 
-    uint8_t data[1400];
+    uint8_t data[NET_PAYLOAD];
 
     uint32_t len;
 };
@@ -65,6 +68,10 @@ void net_server_destroy(struct net_server *server);
 
 uint32_t net_server_poll(struct net_server *server, struct net_event *event);
 
+void net_server_send(const struct net_server *server, uint32_t client_id, const void *data, uint32_t len);
+
+void net_server_broadcast(const struct net_server *server, const void *data, uint32_t len);
+
 struct net_client *net_client_create(const char *host, uint16_t port);
 
 void net_client_disconnect(struct net_client *client);
@@ -72,5 +79,7 @@ void net_client_disconnect(struct net_client *client);
 void net_client_destroy(struct net_client *client);
 
 uint32_t net_client_poll(struct net_client *client, struct net_event *event);
+
+void net_client_send(const struct net_client *client, const void *data, uint32_t len);
 
 #endif /* NET_H */

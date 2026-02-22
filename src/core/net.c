@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define HEADER 5
 
@@ -14,12 +15,13 @@ enum {
     PACKET_CONNECT,
     PACKET_CONNECT_ACKNOWLEDGMENT,
     PACKET_DISCONNECT,
+    PACKET_DATA,
 };
 
 static double net_time(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9;
+    return (double) ts.tv_sec + (double) ts.tv_nsec * 1e-9;
 }
 
 static int udp_sock(const uint16_t port) {
@@ -87,7 +89,7 @@ static int udp_recv(const int fd, struct net_addr *from, void *buf, const uint32
     struct sockaddr_in addr;
     socklen_t alen = sizeof(addr);
 
-    const int n = (int)recvfrom(fd, buf, max, 0, (struct sockaddr *) &addr, &alen);
+    const int n = (int) recvfrom(fd, buf, max, 0, (struct sockaddr *) &addr, &alen);
     if (n <= 0) {
         return -1;
     }
@@ -219,7 +221,7 @@ void net_server_destroy(struct net_server *server) {
 }
 
 uint32_t net_server_poll(struct net_server *server, struct net_event *event) {
-    uint8_t buf[HEADER + 4];
+    uint8_t buf[HEADER + NET_PAYLOAD];
     struct net_addr from;
     const double t = net_time();
     uint32_t type, id;
@@ -254,6 +256,7 @@ uint32_t net_server_poll(struct net_server *server, struct net_event *event) {
     if (type == PACKET_CONNECT) {
         id = peer_find(server, &from);
         if (id != UINT32_MAX) {
+            server->peers[id].last_recv = t;
             send_acknowledgment(server->fd, &from, id);
 
             return 0;
@@ -276,6 +279,7 @@ uint32_t net_server_poll(struct net_server *server, struct net_event *event) {
         *event = (struct net_event){
             .type = NET_EVENT_CONNECT,
             .client_id = id,
+            .len = 0,
         };
 
         return 1;
@@ -294,12 +298,66 @@ uint32_t net_server_poll(struct net_server *server, struct net_event *event) {
         *event = (struct net_event){
             .type = NET_EVENT_DISCONNECT,
             .client_id = id,
+            .len = 0,
         };
 
         return 1;
     }
 
+
+    if (type == PACKET_DATA) {
+        id = peer_find(server, &from);
+        if (id == UINT32_MAX) {
+            return 0;
+        }
+
+        server->peers[id].last_recv = t;
+
+        const uint32_t payload = (uint32_t) (n - HEADER);
+
+        *event = (struct net_event){
+            .type = NET_EVENT_DATA,
+            .client_id = id,
+            .len = payload,
+        };
+        memcpy(event->data, buf + HEADER, payload);
+
+        return 1;
+    }
+
     return 0;
+}
+
+void net_server_send(const struct net_server *server, uint32_t client_id, const void *data, uint32_t len) {
+    if (client_id >= server->max_clients || !server->peers[client_id].alive) {
+        return;
+    }
+
+    if (len > NET_PAYLOAD) {
+        len = NET_PAYLOAD;
+    }
+
+    uint8_t buf[HEADER + NET_PAYLOAD];
+    packet_pack(buf, PACKET_DATA);
+    memcpy(buf + HEADER, data, len);
+
+    udp_send(server->fd, &server->peers[client_id].addr, buf, HEADER + len);
+}
+
+void net_server_broadcast(const struct net_server *server, const void *data, uint32_t len) {
+    if (len > NET_PAYLOAD) len = NET_PAYLOAD;
+
+    uint8_t buf[HEADER + NET_PAYLOAD];
+    packet_pack(buf, PACKET_DATA);
+    memcpy(buf + HEADER, data, len);
+
+    const uint32_t total = HEADER + len;
+
+    for (uint32_t i = 0; i < server->max_clients; i++) {
+        if (server->peers[i].alive) {
+            udp_send(server->fd, &server->peers[i].addr, buf, total);
+        }
+    }
 }
 
 struct net_client *net_client_create(const char *host, uint16_t port) {
@@ -351,7 +409,7 @@ void net_client_disconnect(struct net_client *client) {
 }
 
 uint32_t net_client_poll(struct net_client *client, struct net_event *event) {
-    uint8_t buf[HEADER + 4];
+    uint8_t buf[HEADER + NET_PAYLOAD];
     struct net_addr from;
     const double t = net_time();
     uint32_t type;
@@ -401,5 +459,36 @@ uint32_t net_client_poll(struct net_client *client, struct net_event *event) {
         return 1;
     }
 
+    if (type == PACKET_DATA) {
+        if (!client->connected) {
+            return 0;
+        }
+
+        const uint32_t payload = (uint32_t) (n - HEADER);
+
+        *event = (struct net_event){
+            .type = NET_EVENT_DATA,
+            .client_id = client->id,
+            .len = payload,
+        };
+        memcpy(event->data, buf + HEADER, payload);
+
+        return 1;
+    }
+
     return 0;
+}
+
+void net_client_send(const struct net_client *client, const void *data, uint32_t len) {
+    if (!client->connected) {
+        return;
+    }
+
+    if (len > NET_PAYLOAD) len = NET_PAYLOAD;
+
+    uint8_t buf[HEADER + NET_PAYLOAD];
+
+    packet_pack(buf, PACKET_DATA);
+    memcpy(buf + HEADER, data, len);
+    udp_send(client->fd, &client->server, buf, HEADER + len);
 }
