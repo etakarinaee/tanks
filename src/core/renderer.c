@@ -167,8 +167,21 @@ void renderer_draw(struct render_context *r) {
     for (size_t i = 0; i < r->quads_count; i++) {
         const struct quad_data *data = &r->quads[i];
 
+        /* TODO: Make this clean */
+        struct matrix translate_m;
+        math_matrix_translate(&translate_m, data->pos.x, data->pos.y, 0.0f);
+
+        struct matrix scale_m;
+        math_matrix_scale(&scale_m, data->scale, data->scale, data->scale);
+
+        struct matrix rotate_m;
+        math_matrix_rotate_2d(&rotate_m, data->rotation);
+
+        struct matrix scale_rot_m;
+        math_matrix_mul(&scale_rot_m, &scale_m, &rotate_m);
+
         struct matrix m;
-        math_matrix_translate(&m, data->pos.x, data->pos.y, 0.0f);
+        math_matrix_mul(&m, &translate_m, &scale_rot_m);
 
         GLint uniform_matrix_loc;
         if (data->tex == CORE_RENDERER_QUAD_NO_TEXTURE) {
@@ -240,4 +253,27 @@ void math_matrix_scale(struct matrix *m, const float x, const float y, const flo
     *m = (struct matrix){ .m = {
         [0] = x, [5] = y, [10] = z, [15] = 1.0f
     }};
+}
+
+void math_matrix_rotate_2d(struct matrix *m, float angle) {
+    float theta = angle * DEG2RAD;
+
+    *m = (struct matrix){ .m = {
+        [0] = cos(theta), [1] = -sin(theta), 
+        [4] = sin(theta), [5] = cos(theta),
+        [10] = 1.0f, [15] = 1.0f,
+    }};
+}
+
+/* TODO: probaly optimize or smth */
+void math_matrix_mul(struct matrix *out, struct matrix *a, struct matrix *b) {
+    for (int r = 0; r < 4; r++) {
+        for (int c = 0; c < 4; c++) {
+            float sum = 0.0f;
+            for (int k = 0; k < 4; k++) {
+                sum += a->m[k * 4 + r] * b->m[c * 4 + k];
+            }
+            out->m[c * 4 + r] = sum;
+        }
+    }
 }

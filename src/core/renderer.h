@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 
 #include <stddef.h>
+#include <math.h>
 
 #define CORE_RENDERER_QUAD_NO_TEXTURE (-1)
 
@@ -60,8 +61,15 @@ void renderer_draw(struct render_context *r);
 texture_id renderer_load_texture(const char *path);
 
 /* Math */
+#define RAD2DEG (M_PI / 360.0 * 2.0)
+#define DEG2RAD (360.0 / M_PI / 2.0)
+
 void math_matrix_identity(struct matrix *m);
 void math_matrix_translate(struct matrix *m, float x, float y, float z);
 void math_matrix_scale(struct matrix *m, float x, float y, float z);
+
+/* Angle in degrees */
+void math_matrix_rotate_2d(struct matrix* m, float angle);
+void math_matrix_mul(struct matrix* out, struct matrix* a, struct matrix* b);
 
 #endif
