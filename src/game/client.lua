@@ -26,7 +26,7 @@ function game_update(dt)
         ev = client:poll()
     end
 
-        if core.mouse_down(mouse.left) then 
+    if core.mouse_down(mouse.left) then 
         local dim = core.get_screen_dimensions()
         local pos = core.mouse_pos()
     

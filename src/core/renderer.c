@@ -1,5 +1,7 @@
 #include "renderer.h"
 #include "archive.h"
+#include "font.h"
+#include "freetype/freetype.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -136,11 +138,17 @@ int renderer_init(struct render_context *r) {
     r->quads_count = 0;
     r->quads_capacity = 2;
 
+    if (font_init(r)) {
+        fprintf(stderr, "failed initing font engine\n");
+        return 1;
+    }
+
     return 0;
 }
 
 void renderer_deinit(const struct render_context *r) {
     free(r->quads);
+    font_deinit(r);
 }
 
 void renderer_push_quad(struct render_context *r, const struct vec2 pos, const float scale, const float rotation, const struct color3 color, const texture_id tex) {
@@ -248,62 +256,23 @@ texture_id renderer_load_texture(const char *path) {
     return (texture_id)texture;
 }
 
-void math_matrix_identity(struct matrix *m) {
-    *m = (struct matrix){ .m = {
-        [0] = 1.0f, [5] = 1.0f, [10] = 1.0f, [15] = 1.0f
-    }};
-}
+font_id renderer_load_font(const char *path) {
+    int width, height;
+    uint8_t* data = font_get_atlas(path, &width, &height);
 
-void math_matrix_translate(struct matrix *m, const float x, const float y, const float z) {
-    math_matrix_identity(m);
-    m->m[12] = x;
-    m->m[13] = y;
-    m->m[14] = z;
-}
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
 
-void math_matrix_scale(struct matrix *m, const float x, const float y, const float z) {
-    *m = (struct matrix){ .m = {
-        [0] = x, [5] = y, [10] = z, [15] = 1.0f
-    }};
-}
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-void math_matrix_rotate_2d(struct matrix *m, float angle) {
-    float theta = DEG2RAD(angle);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    *m = (struct matrix){ .m = {
-        [0] = cos(theta), [1] = -sin(theta), 
-        [4] = sin(theta), [5] = cos(theta),
-        [10] = 1.0f, [15] = 1.0f,
-    }};
-}
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
 
-/* TODO: probaly optimize or smth */
-void math_matrix_mul(struct matrix *out, struct matrix *a, struct matrix *b) {
-    for (int r = 0; r < 4; r++) {
-        for (int c = 0; c < 4; c++) {
-            float sum = 0.0f;
-            for (int k = 0; k < 4; k++) {
-                sum += a->m[k * 4 + r] * b->m[c * 4 + k];
-            }
-            out->m[c * 4 + r] = sum;
-        }
-    }
-}
-
-void math_matrix_orthographic(struct matrix *m, float left, float right, float bottom, float top, float near, float far) {
-    *m = (struct matrix){ .m = {
-        [0] = 2.0f / (right - left), [5] = 2.0f / (top - bottom),
-        [10] = 2.0f / (near - far), [15] = 1.0f,
-        [12] = (left + right) / (left - right),
-        [13] = (bottom + top) / (bottom - top),
-        [14] = (near + far) / (near - far),
-    }};
-}
-
-void math_matrix_get_orthographic(struct render_context* r, struct matrix *m) {
-    float half_w = (r->width / r->camera.zoom) * 0.5f;
-    float half_h = (r->height / r->camera.zoom) * 0.5f;
-
-    math_matrix_orthographic(m, -half_w, half_w, -half_h, half_h, -1.0f, 1.0f);
+    /* TODO: idk implement.. */
 }
 

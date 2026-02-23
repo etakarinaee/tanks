@@ -1,0 +1,49 @@
+
+#include "font.h"
+#include "renderer.h"
+
+int font_init(struct render_context *r) {
+    if (FT_Init_FreeType(&r->ft_lib)) {
+        fprintf(stderr, "failed to init freetype\n");
+        return 1;
+    }
+
+    return 0;
+}
+
+void font_deinit(const struct render_context *r) {
+    FT_Done_FreeType(r->ft_lib);
+}
+
+uint8_t* font_get_atlas(const char* path, int *width, int *height) {
+    if (!path) return NULL;
+
+    FT_Face face;
+    
+    FT_Error error = FT_New_Face(ctx.ft_lib, path, 0, &face);
+    if (error == FT_Err_Unknown_File_Format) {
+        fprintf(stderr, "unkown format: %s\n", path);
+        return NULL;
+    }
+    else if (error) {
+        fprintf(stderr, "faced unkown error when loading: %s\n", path);
+        return NULL;
+    }
+
+    error = FT_Set_Char_Size(face, 0, 64 * 64, 0, 0);
+
+    for (char c = 32; c < 127; c++) {
+        FT_UInt glyph_index = FT_Get_Char_Index(face, c);
+        FT_Load_Glyph(face, glyph_index, FT_LOAD_NO_BITMAP);
+
+        if (face->glyph->format != FT_GLYPH_FORMAT_OUTLINE) {
+            fprintf(stderr, "Glyph is not in outline mode!\n");
+            return NULL;
+        }
+
+        FT_Outline* outline = &face->glyph->outline;
+    }
+
+}
+
+

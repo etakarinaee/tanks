@@ -7,12 +7,10 @@
 #include <stddef.h>
 #include <math.h>
 
-#define CORE_RENDERER_QUAD_NO_TEXTURE (-1)
+#include "font.h"
+#include "cmath.h"
 
-struct vec2 {
-    float x;
-    float y;
-};
+#define CORE_RENDERER_QUAD_NO_TEXTURE (-1)
 
 struct color3 {
     float r;
@@ -20,11 +18,8 @@ struct color3 {
     float b;
 };
 
-struct matrix {
-    float m[16];
-};
-
 typedef GLint texture_id;
+typedef int font_id;
 
 struct quad_data {
     texture_id tex;
@@ -44,6 +39,9 @@ struct render_context {
     int height;
     GLFWwindow *window;
     struct camera camera;
+
+    /* Text */
+    FT_Library ft_lib;
 
     GLuint vao;
     GLuint vbo;
@@ -65,19 +63,6 @@ void renderer_push_quad(struct render_context *r, struct vec2 pos, float scale, 
 void renderer_draw(struct render_context *r);
 
 texture_id renderer_load_texture(const char *path);
-
-/* Math */
-#define RAD2DEG(x) (x * 180.0f / M_PI)
-#define DEG2RAD(x) (x * M_PI / 180.0f)
-
-void math_matrix_identity(struct matrix *m);
-void math_matrix_translate(struct matrix *m, float x, float y, float z);
-void math_matrix_scale(struct matrix *m, float x, float y, float z);
-
-/* Angle in degrees */
-void math_matrix_rotate_2d(struct matrix* m, float angle);
-void math_matrix_mul(struct matrix* out, struct matrix* a, struct matrix* b);
-void math_matrix_orthographic(struct matrix* m, float left, float right, float bottom, float top, float near, float far);
-void math_matrix_get_orthographic(struct render_context *r, struct matrix* m);
+font_id renderer_load_font(const char* path);
 
 #endif

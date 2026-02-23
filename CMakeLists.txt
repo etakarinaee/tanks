@@ -44,15 +44,21 @@ set(CORE_SOURCES
         src/core/lua_api.c
         src/core/renderer.c
         src/core/net.c
+        src/core/font.c
+        src/core/cmath.c
 )
 
+# Freetype2
+find_package(Freetype REQUIRED)
+
+
 set(CORE_FLAGS -pedantic-errors -Wall -Wextra)
-set(CORE_LIBS glad stbi GL glfw luajit-5.1 m dl)
+set(CORE_LIBS glad stbi GL glfw freetype luajit-5.1 m dl)
 
 # client
 add_executable(client ${CORE_SOURCES})
 target_compile_options(client PRIVATE ${CORE_FLAGS})
-target_include_directories(client PRIVATE ${CMAKE_SOURCE_DIR}/lib)
+target_include_directories(client PRIVATE ${CMAKE_SOURCE_DIR}/lib /usr/include/freetype2/)
 target_link_libraries(client ${CORE_LIBS})
 add_dependencies(client pack_assets)
 
@@ -60,6 +66,6 @@ add_dependencies(client pack_assets)
 add_executable(server ${CORE_SOURCES})
 target_compile_definitions(server PRIVATE SERVER)
 target_compile_options(server PRIVATE ${CORE_FLAGS})
-target_include_directories(server PRIVATE ${CMAKE_SOURCE_DIR}/lib)
+target_include_directories(server PRIVATE ${CMAKE_SOURCE_DIR}/lib /usr/include/freetype2/)
 target_link_libraries(server ${CORE_LIBS})
 add_dependencies(server pack_assets)

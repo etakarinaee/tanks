@@ -70,8 +70,6 @@ int main(void) {
 
     renderer_init(&ctx);
 
-    const texture_id tex = renderer_load_texture("../test.png");
-
 #ifdef SERVER
     double last_time = glfwGetTime();
     while (1) {
