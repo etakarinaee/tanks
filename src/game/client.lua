@@ -1,10 +1,32 @@
 local client = nil
 
+local player = {
+    x = 0.0,
+    y = 0.5,
+
+    -- velocity
+    vx = 0.0,
+    vy = 0.0,
+
+    w = 0.08,
+    h = 0.08,
+
+    -- TODO: get rid of that ugly bool
+    on_ground = false,
+}
+
+local gravity = -2.0
+local force = 1.0
+local speed = 1.0
+local friction = 0.88
+
 function game_init()
     client = core.client.new("127.0.0.1", 7777)
+    player.x = 0.0
+    player.y = 0.5
 end
 
-function game_update(dt)
+function game_update(delta_time)
     local ev = client:poll()
     while ev do
         if ev.type == core.net_event.connect then
@@ -17,6 +39,26 @@ function game_update(dt)
         end
         ev = client:poll()
     end
+
+    if core.key_down(key.a) then
+        player.vx = player.vx - speed * delta_time
+    end
+    if core.key_down(key.d) then
+        player.vx = player.vx + speed * delta_time
+    end
+
+    player.vy = player.vy + gravity * delta_time
+
+    player.x = player.x + player.vx * delta_time
+    player.y = player.y + player.vy * delta_time
+
+    player.vx = player.vx * friction
+
+    if player.y < -1.2 then
+        player.x, player.y, player.vx, player.vy = 0.0, 0.5, 0.0, 0.0
+    end
+
+    core.push_quad({player.x, player.y}, player.w, player.h, {0.9, 0.2, 0.2}, -1)
 end
 
 function game_quit()

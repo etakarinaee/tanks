@@ -61,7 +61,7 @@ static int l_print(lua_State *L) {
 static int l_get_screen_dimensions(lua_State *L) {
     int width, height;
     glfwGetWindowSize(ctx.window, &width, &height);
-    
+
     lua_newtable(L);
     lua_pushinteger(L, width);
     lua_setfield(L, -2, "width");
@@ -74,10 +74,12 @@ static int l_get_screen_dimensions(lua_State *L) {
 
 static int l_push_quad(lua_State *L) {
     const struct vec2 pos = check_vec2(L, 1);
-    const struct color3 color = check_color3(L, 2);
-    const texture_id tex = luaL_checkint(L, 3);
+    const float scale_x = (float) luaL_checknumber(L, 2);
+    const float scale_y = (float) luaL_checknumber(L, 3);
+    const struct color3 color = check_color3(L, 4);
+    const texture_id tex = (texture_id) luaL_checkinteger(L, 5);
 
-    renderer_push_quad(&ctx, pos, 1.0f, 0.0f, color, tex);
+    renderer_push_quad(&ctx, pos, scale_x, scale_y, 0.0f, color, tex);
 
     return 0;
 }
