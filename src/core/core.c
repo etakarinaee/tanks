@@ -70,6 +70,8 @@ int main(void) {
 
     renderer_init(&ctx);
 
+    font_id id = renderer_load_font("../AdwaitaSans-Regular.ttf");
+
 #ifdef SERVER
     double last_time = glfwGetTime();
     while (1) {

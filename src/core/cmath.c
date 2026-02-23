@@ -2,6 +2,24 @@
 #include "cmath.h"
 #include "renderer.h"
 
+#include <math.h>
+
+float math_vec2_length(struct vec2 v) {
+    return sqrtf(v.x * v.x + v.y * v.y);
+}
+
+float math_vec2_dot(struct vec2 a, struct vec2 b) {
+    return a.x * b.x + a.y * b.y;
+}
+
+float math_vec2_angle_cos(struct vec2 a, struct vec2 b) {
+    return math_vec2_dot(a, b) / math_vec2_length(a) * math_vec2_length(b);
+}
+
+float math_vec2_angle(struct vec2 a, struct vec2 b) {
+    return acosf(math_vec2_angle_cos(a, b));
+}
+
 void math_matrix_identity(struct matrix *m) {
     *m = (struct matrix){ .m = {
         [0] = 1.0f, [5] = 1.0f, [10] = 1.0f, [15] = 1.0f

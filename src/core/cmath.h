@@ -17,7 +17,7 @@ struct matrix {
 struct render_context;
 
 float math_vec2_length(struct vec2 v);
-float math_vec2_dot(struct vec2 v);
+float math_vec2_dot(struct vec2 a, struct vec2 b);
 float math_vec2_angle_cos(struct vec2 a, struct vec2 b);
 
 /* Angle in degrees */

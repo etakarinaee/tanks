@@ -1,5 +1,6 @@
 
 #include "font.h"
+#include "freetype/ftimage.h"
 #include "renderer.h"
 
 int font_init(struct render_context *r) {
@@ -15,11 +16,34 @@ void font_deinit(const struct render_context *r) {
     FT_Done_FreeType(r->ft_lib);
 }
 
+static void load_char(FT_Face* face, char c) {
+    FT_UInt glyph_index = FT_Get_Char_Index(*face, c);
+    FT_Load_Glyph(*face, glyph_index, FT_LOAD_NO_BITMAP);
+
+    if ((*face)->glyph->format != FT_GLYPH_FORMAT_OUTLINE) {
+        fprintf(stderr, "Glyph is not in outline mode!\n");
+        return;
+    }
+
+    FT_Outline* outline = &(*face)->glyph->outline;
+
+    for (int i = 0; i < outline->n_points; i++) {
+        if (outline->tags[i] & FT_CURVE_TAG_ON) {
+            printf("%c: on ", c);
+        }
+        else {
+            printf("%c: off ", c);
+        }
+
+        printf("%ld %ld\n", outline->points[i].x, outline->points[i].y);
+    }
+}
+
 uint8_t* font_get_atlas(const char* path, int *width, int *height) {
     if (!path) return NULL;
 
     FT_Face face;
-    
+
     FT_Error error = FT_New_Face(ctx.ft_lib, path, 0, &face);
     if (error == FT_Err_Unknown_File_Format) {
         fprintf(stderr, "unkown format: %s\n", path);
@@ -32,16 +56,8 @@ uint8_t* font_get_atlas(const char* path, int *width, int *height) {
 
     error = FT_Set_Char_Size(face, 0, 64 * 64, 0, 0);
 
-    for (char c = 32; c < 127; c++) {
-        FT_UInt glyph_index = FT_Get_Char_Index(face, c);
-        FT_Load_Glyph(face, glyph_index, FT_LOAD_NO_BITMAP);
-
-        if (face->glyph->format != FT_GLYPH_FORMAT_OUTLINE) {
-            fprintf(stderr, "Glyph is not in outline mode!\n");
-            return NULL;
-        }
-
-        FT_Outline* outline = &face->glyph->outline;
+    for (char c = '0'; c < 127; c++) {
+        load_char(&face, c);
     }
 
 }
