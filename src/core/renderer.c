@@ -140,7 +140,7 @@ void renderer_deinit(const struct render_context *r) {
     free(r->quads);
 }
 
-void renderer_push_quad(struct render_context *r, const struct vec2 pos, const float scale, const float rotation, const struct color3 color, const texture_id tex) {
+void renderer_push_quad(struct render_context *r, const struct vec2 pos, const float scale_x, const float scale_y, const float rotation, const struct color3 color, const texture_id tex) {
     if (r->quads_count + 1 > r->quads_capacity) {
         const size_t new_cap = r->quads_capacity ? r->quads_capacity * 2 : 2;
         struct quad_data *new_data = realloc(r->quads, new_cap * sizeof(struct quad_data));
@@ -154,12 +154,14 @@ void renderer_push_quad(struct render_context *r, const struct vec2 pos, const f
 
     r->quads[r->quads_count++] = (struct quad_data){
         .pos = pos,
-        .scale = scale,
+        .scale_x = scale_x,
+        .scale_y = scale_y,
         .rotation = rotation,
         .color = color,
         .tex = tex
     };
 }
+
 
 void renderer_draw(struct render_context *r) {
     glBindVertexArray(r->vao);
@@ -172,7 +174,7 @@ void renderer_draw(struct render_context *r) {
         math_matrix_translate(&translate_m, data->pos.x, data->pos.y, 0.0f);
 
         struct matrix scale_m;
-        math_matrix_scale(&scale_m, data->scale, data->scale, data->scale);
+        math_matrix_scale(&scale_m, data->scale_x, data->scale_y, 1.f);
 
         struct matrix rotate_m;
         math_matrix_rotate_2d(&rotate_m, data->rotation);

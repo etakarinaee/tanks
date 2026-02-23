@@ -28,7 +28,7 @@ typedef GLint texture_id;
 
 struct quad_data {
     texture_id tex;
-    float scale;
+    float scale_x, scale_y;
     float rotation;
     struct vec2 pos;
     struct color3 color;
@@ -55,7 +55,7 @@ extern struct render_context ctx;
 
 int renderer_init(struct render_context *r);
 void renderer_deinit(const struct render_context *r);
-void renderer_push_quad(struct render_context *r, struct vec2 pos, float scale, float rotation, struct color3 color, texture_id tex);
+void renderer_push_quad(struct render_context *r, struct vec2 pos, float scale_x, float scale_y, float rotation, struct color3 color, texture_id tex);
 void renderer_draw(struct render_context *r);
 
 texture_id renderer_load_texture(const char *path);
