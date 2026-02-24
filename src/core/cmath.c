@@ -4,6 +4,18 @@
 
 #include <math.h>
 
+struct vec2 math_vec2_add(struct vec2 a, struct vec2 b) {
+    return (struct vec2){a.x + b.x, a.y + b.y};
+}
+
+struct vec2 math_vec2_subtract(struct vec2 a, struct vec2 b) {
+    return (struct vec2){a.x - b.x, a.y - b.y};
+}
+
+struct vec2 math_vec2_scale(struct vec2 v, float scalar) {
+    return (struct vec2){v.x * scalar, v.y * scalar};
+}
+
 float math_vec2_length(struct vec2 v) {
     return sqrtf(v.x * v.x + v.y * v.y);
 }

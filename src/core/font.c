@@ -2,6 +2,7 @@
 #include "font.h"
 #include "freetype/ftimage.h"
 #include "renderer.h"
+#include "cmath.h"
 
 #include <stdlib.h>
 
@@ -16,6 +17,22 @@ int font_init(struct render_context *r) {
 
 void font_deinit(const struct render_context *r) {
     FT_Done_FreeType(r->ft_lib);
+}
+
+// control points: p1
+static struct vec2 quadratic_bezier_derivitive(struct vec2 p0, struct vec2 p1, struct vec2 p2, float t) {
+    struct vec2 term_1 = math_vec2_scale(math_vec2_subtract(p2, math_vec2_scale(p1, 2)), 2.0f * t);
+    struct vec2 term_2 = math_vec2_scale(math_vec2_subtract(p1, p0), 2.0f);
+    return math_vec2_add(term_1, term_2);
+}
+
+// control points: p1 p2
+static struct vec2 cubic_bezer_derivitive(struct vec2 p0, struct vec2 p1, struct vec2 p2, struct vec2 p3, float t) {
+    struct vec2 term_1 = math_vec2_scale(math_vec2_add(math_vec2_subtract(p3, math_vec2_scale(p2, 3)),
+                                                       math_vec2_subtract(math_vec2_scale(p1, 3.0f), p0)), 3.0f * t * t);
+    struct vec2 term_2 = math_vec2_scale(math_vec2_add(math_vec2_subtract(p2, math_vec2_scale(p1, 2.0f)), p0), 6.0f * t);
+    struct vec2 term_3 = math_vec2_scale(math_vec2_subtract(p1, p0), 3.0);
+    return math_vec2_add(term_1, math_vec2_add(term_2, term_3));
 }
 
 static void load_char(FT_Face* face, char c) {
