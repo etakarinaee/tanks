@@ -278,7 +278,7 @@ static uint8_t* font_get_atlas(const char* path, int *width, int *height, struct
 
     // TODO: make the loading chars not constant
     font->char_range = (struct vec2i){'0', '~'};
-    const int chars_count = '~' - '0';
+    const int chars_count = '~' - '0' + 1;
 
     font->chars = malloc(chars_count * sizeof(struct character));
 
@@ -286,7 +286,7 @@ static uint8_t* font_get_atlas(const char* path, int *width, int *height, struct
     const int chars_per_line = 26;
 
     *width = char_len * chars_per_line;
-    *height = char_len * ((chars_count / chars_per_line) + 1); // unoptimized + 1 ig
+    *height = char_len * ((chars_count + chars_per_line - 1) / chars_per_line);
 
     uint8_t* data = calloc(*width * *height, sizeof(uint8_t));
     if (!data) {
@@ -311,7 +311,7 @@ static uint8_t* font_get_atlas(const char* path, int *width, int *height, struct
     error = FT_Set_Pixel_Sizes(face, 0, char_len);
 
     int index = 0;
-    for (uint8_t c = '0'; c < '~'; c++) {
+    for (uint8_t c = '0'; c <= '~'; c++) {
         if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
             fprintf(stderr, "failed loading char: %c in: %s\n", c, path);
             continue;
@@ -320,13 +320,16 @@ static uint8_t* font_get_atlas(const char* path, int *width, int *height, struct
         // write character into buffer 
         for (uint32_t y = 0; y < face->glyph->bitmap.rows; y++) {
             for (uint32_t x = 0; x < face->glyph->bitmap.width; x++) { // probaly some move to right needed
-                int dst_x = x + (index % chars_per_line) * char_len;
-                int dst_y = y + (index / chars_per_line) * char_len;
-                int dst_index = dst_y * (chars_per_line * char_len) + dst_x;
+                int cell_x = (index % chars_per_line) * char_len;
+                int cell_y = (index / chars_per_line) * char_len;
 
-                printf("%u\n", x);
-                
-                data[dst_y * (chars_per_line * char_len) + dst_x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.width + x];
+                int dst_x = cell_x + face->glyph->bitmap_left + x;
+                int dst_y = cell_y + (char_len - face->glyph->bitmap_top) + y;
+
+                int dst_index = dst_y * (chars_per_line * char_len) + dst_x;
+                uint32_t flipped_y = face->glyph->bitmap.rows - 1 - y;
+
+                data[dst_index] = face->glyph->bitmap.buffer[flipped_y * face->glyph->bitmap.width + x];
             }
         }
 
@@ -375,7 +378,6 @@ texture_id renderer_load_font(struct render_context *r, const char *path) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
 
     free(data);
 
