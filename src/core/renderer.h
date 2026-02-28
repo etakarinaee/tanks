@@ -4,10 +4,12 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <freetype2/ft2build.h>
+#include FT_FREETYPE_H
+
 #include <stddef.h>
 #include <math.h>
 
-#include "font.h"
 #include "cmath.h"
 
 #define CORE_RENDERER_QUAD_NO_TEXTURE (-1)
@@ -29,6 +31,18 @@ struct quad_data {
     struct color3 color;
 };
 
+struct character {
+    struct vec2i size;
+    struct vec2i bearing;
+    uint32_t advance;
+};
+
+struct font {
+    struct vec2i char_range; /* from this asci code to another all chars its tmp for more advanced loading */ 
+    struct character* chars; /* character data array as big as char_range.y - char_range.x */
+    texture_id tex;
+};
+
 struct camera {
     struct vec2 pos;
     float zoom;
@@ -42,6 +56,9 @@ struct render_context {
 
     /* Text */
     FT_Library ft_lib;
+    struct font* fonts;
+    size_t fonts_count;
+    size_t fonts_capacity;
 
     GLuint vao;
     GLuint vbo;
@@ -63,6 +80,6 @@ void renderer_push_quad(struct render_context *r, struct vec2 pos, float scale, 
 void renderer_draw(struct render_context *r);
 
 texture_id renderer_load_texture(const char *path);
-font_id renderer_load_font(const char* path);
+texture_id renderer_load_font(struct render_context *r, const char* path);
 
 #endif

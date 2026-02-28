@@ -44,7 +44,6 @@ set(CORE_SOURCES
         src/core/lua_api.c
         src/core/renderer.c
         src/core/net.c
-        src/core/font.c
         src/core/cmath.c
 )
 

@@ -1,6 +1,5 @@
 #include "renderer.h"
 #include "archive.h"
-#include "font.h"
 #include "freetype/freetype.h"
 
 #include <stdio.h>
@@ -115,6 +114,19 @@ end:
     return error;
 }
 
+static int font_init(struct render_context *r) {
+    if (FT_Init_FreeType(&r->ft_lib)) {
+        fprintf(stderr, "failed to init freetype\n");
+        return 1;
+    }
+
+    r->fonts_capacity = 2;
+    r->fonts_count = 0;
+    r->fonts = malloc(r->fonts_capacity * sizeof(struct font));
+
+    return 0;
+}
+
 int renderer_init(struct render_context *r) {
     buffers_init(r);
 
@@ -144,6 +156,11 @@ int renderer_init(struct render_context *r) {
     }
 
     return 0;
+}
+
+static void font_deinit(const struct render_context *r) {
+    FT_Done_FreeType(r->ft_lib);
+    if (r->fonts) free(r->fonts);
 }
 
 void renderer_deinit(const struct render_context *r) {
@@ -256,9 +273,96 @@ texture_id renderer_load_texture(const char *path) {
     return (texture_id)texture;
 }
 
-font_id renderer_load_font(const char *path) {
+static uint8_t* font_get_atlas(const char* path, int *width, int *height, struct font* font) {
+    if (!path) return NULL;
+
+    // TODO: make the loading chars not constant
+    font->char_range = (struct vec2i){'0', '~'};
+    const int chars_count = '~' - '0';
+
+    font->chars = malloc(chars_count * sizeof(struct character));
+
+    const int char_len = 48;
+    const int chars_per_line = 26;
+
+    *width = char_len * chars_per_line;
+    *height = char_len * ((chars_count / chars_per_line) + 1); // unoptimized + 1 ig
+
+    uint8_t* data = calloc(*width * *height, sizeof(uint8_t));
+    if (!data) {
+        fprintf(stderr, "out of memory loading font: %s\n", path);
+        return NULL;
+    }
+
+    FT_Face face;
+
+    FT_Error error = FT_New_Face(ctx.ft_lib, path, 0, &face);
+    if (error == FT_Err_Unknown_File_Format) {
+        fprintf(stderr, "unkown format: %s\n", path);
+        free(data);
+        return NULL;
+    }
+    else if (error) {
+        fprintf(stderr, "faced unkown error when loading: %s\n", path);
+        free(data);
+        return NULL;
+    }
+
+    error = FT_Set_Pixel_Sizes(face, 0, char_len);
+
+    int index = 0;
+    for (uint8_t c = '0'; c < '~'; c++) {
+        if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
+            fprintf(stderr, "failed loading char: %c in: %s\n", c, path);
+            continue;
+        }
+ 
+        // write character into buffer 
+        for (uint32_t y = 0; y < face->glyph->bitmap.rows; y++) {
+            for (uint32_t x = 0; x < face->glyph->bitmap.width; x++) { // probaly some move to right needed
+                int dst_x = x + (index % chars_per_line) * char_len;
+                int dst_y = y + (index / chars_per_line) * char_len;
+                int dst_index = dst_y * (chars_per_line * char_len) + dst_x;
+
+                printf("%u\n", x);
+                
+                data[dst_y * (chars_per_line * char_len) + dst_x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.width + x];
+            }
+        }
+
+        font->chars[index].size = (struct vec2i){face->glyph->bitmap.width, face->glyph->bitmap.rows};
+        font->chars[index].bearing = (struct vec2i){face->glyph->bitmap_left, face->glyph->bitmap_top};
+        font->chars[index].advance = face->glyph->advance.x;
+
+        index++;
+    }
+
+    FT_Done_Face(face);
+
+    return data;
+}
+
+// texture_id returning is tmp
+texture_id renderer_load_font(struct render_context *r, const char *path) {
+    if (r->fonts_count + 1 >= r->fonts_capacity) {
+        size_t new_cap = r->fonts_capacity *= 2;
+        struct font* new_data = realloc(r->fonts, new_cap * sizeof(struct font));
+        if (!new_data) {
+            fprintf(stderr, "failed pushing another element in font array!\n");
+            return -1;
+        }
+
+        r->fonts_capacity = new_cap;
+        r->fonts = new_data;
+    }
+    r->fonts_count++;
+    int font_index = r->fonts_count - 1;
+
     int width, height;
-    uint8_t* data = font_get_atlas(path, &width, &height);
+    uint8_t* data = font_get_atlas(path, &width, &height, &r->fonts[font_index]);
+    if (!data) return -1;
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     GLuint texture;
     glGenTextures(1, &texture);
@@ -270,9 +374,12 @@ font_id renderer_load_font(const char *path) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    /* TODO: idk implement.. */
+    free(data);
+
+    r->fonts[font_index].tex = (texture_id)texture;
+    return (texture_id)texture;
 }
 

@@ -10,6 +10,11 @@ struct vec2 {
     float y;
 };
 
+struct vec2i {
+    int x;
+    int y;
+};
+
 struct matrix {
     float m[16];
 };

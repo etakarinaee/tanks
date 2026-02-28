@@ -70,7 +70,7 @@ int main(void) {
 
     renderer_init(&ctx);
 
-    font_id id = renderer_load_font("../AdwaitaSans-Regular.ttf");
+    font_id id = renderer_load_font(&ctx, "../AdwaitaSans-Regular.ttf");
 
 #ifdef SERVER
     double last_time = glfwGetTime();
@@ -96,6 +96,8 @@ int main(void) {
 
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        renderer_push_quad(&ctx, (struct vec2){0, 0}, 1000.0f, 0.0f, (struct color3){0.0f, 0.0f, 0.0f}, id);
 
         renderer_draw(&ctx);
 
