@@ -247,11 +247,6 @@ static float measure_text(struct render_context *r, float pixel_height, font_id 
             continue;
 
         struct character *ch = &f->chars[char_index];
-
-        struct vec2 glyph_size = {
-            .x = ch->size.x * scale,
-        };
-
         width += ch->advance * scale;
     }
 
