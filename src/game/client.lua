@@ -7,7 +7,6 @@ local players = {}
 local platform = { x = 0.0, y = -0.5, w = 800, h = 100 }
 
 local gravity = -2.0
-local speed = 1.0
 local friction = 0.88
 local player_w = 30
 local player_h = 30
@@ -43,7 +42,7 @@ local angle = 0.0
 local pos_x = 0.0
 local pos_y = 0.0
 
-local speed = 300.0
+local speed = 1200.0
 
 function game_init()
     core.local_load("en.txt")
@@ -124,7 +123,7 @@ function game_update(delta_time)
     core.push_rect({platform.x, platform.y}, {platform.w, platform.h}, {0.3, 0.7, 0.3})
     for id, player in pairs(players) do
         core.push_texture({player.x, player.y}, {player_w, player_h}, image)
-        core.push_text_ex(font, "ID: " .. id, {player.x, player.y + 10}, 205, {1.0, 1.0, 1.0}, core.text_anchor.center)
+        core.push_text_ex(font, "ID: " .. id, {player.x, player.y + 10}, 25, {1.0, 1.0, 1.0}, core.text_anchor.center)
     end
 end
 
