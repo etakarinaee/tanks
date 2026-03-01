@@ -314,10 +314,11 @@ static int push_event(lua_State *L, const struct net_event *event) {
 // server
 
 static int l_server_new(lua_State *L) {
-    const uint16_t port = (uint16_t) luaL_checkint(L, 1);
-    const uint32_t n = (uint32_t) luaL_optint(L, 2, 32);
+    const char* ip = luaL_checkstring(L, 1);
+    const uint16_t port = (uint16_t) luaL_checkint(L, 2);
+    const uint32_t n = (uint32_t) luaL_optint(L, 3, 32);
 
-    struct net_server *server = net_server_create(port, n);
+    struct net_server *server = net_server_create(ip, port, n);
     if (!server) {
         luaL_error(L, "core.server.new: failed on port %d", port);
     }

@@ -62,7 +62,7 @@ struct net_client {
 };
 
 // `n` - max clients
-struct net_server *net_server_create(uint16_t port, uint32_t n);
+struct net_server *net_server_create(const char *ip, uint16_t port, uint32_t n);
 
 void net_server_destroy(struct net_server *server);
 

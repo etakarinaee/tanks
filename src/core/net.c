@@ -1,11 +1,11 @@
 #include "net.h"
 
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <time.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netdb.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -24,7 +24,7 @@ static double net_time(void) {
     return (double) ts.tv_sec + (double) ts.tv_nsec * 1e-9;
 }
 
-static int udp_sock(const uint16_t port) {
+static int udp_sock(const char *ip, const uint16_t port) {
     const int fd = socket(AF_INET, SOCK_DGRAM, 0);
     const int opt = 1;
     int fl;
@@ -42,7 +42,7 @@ static int udp_sock(const uint16_t port) {
         struct sockaddr_in addr = {
             .sin_family = AF_INET,
             .sin_port = htons(port),
-            .sin_addr.s_addr = INADDR_ANY,
+            .sin_addr.s_addr = ip ? inet_addr(ip) : INADDR_ANY,
         };
 
         if (bind(fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
@@ -167,7 +167,7 @@ static uint32_t peer_alloc(const struct net_server *server) {
     return UINT32_MAX;
 }
 
-struct net_server *net_server_create(const uint16_t port, uint32_t n) {
+struct net_server *net_server_create(const char *ip, const uint16_t port, uint32_t n) {
     if (n < 1) {
         n = 1;
     }
@@ -188,7 +188,7 @@ struct net_server *net_server_create(const uint16_t port, uint32_t n) {
         return NULL;
     }
 
-    server->fd = udp_sock(port);
+    server->fd = udp_sock(ip, port);
     if (server->fd < 0) {
         free(server->peers);
         free(server);
@@ -372,7 +372,7 @@ struct net_client *net_client_create(const char *host, uint16_t port) {
         return NULL;
     }
 
-    client->fd = udp_sock(0);
+    client->fd = udp_sock(NULL, 0);
 
     if (client->fd < 0) {
         free(client);
