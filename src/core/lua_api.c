@@ -13,6 +13,9 @@
 #include "cmath.h"
 #include "ui.h"
 #include "collision.h"
+#include "audio.h"
+
+#include <string.h>
 
 // metatables
 #define SERVER_MT "net_server"
@@ -228,6 +231,44 @@ static int l_check_point_rect(lua_State *L) {
         lua_pushinteger(L, in);
         return 1;
     }
+
+    return 0;
+}
+
+////////////////
+/* audio */
+////////////////
+
+/* TODO: make all these functions better */
+
+static int l_get_audio_buffer(lua_State *L) {
+    lua_newtable(L);
+
+    for (int i = 1; i <= AUDIO_FRAMES_PER_BUFFER; i++) {
+        lua_pushinteger(L, i); // index
+        lua_pushnumber(L, audio_context.data.buffer_in[i]);
+        lua_settable(L, -3);
+    }
+
+    return 1;
+} 
+
+static int l_write_audio_buffer(lua_State *L) {
+    float buffer[AUDIO_FRAMES_PER_BUFFER];
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    // TODO: tmp
+    buffer[0] = AUDIO_INPUT_AVAILABLE;
+ 
+    /* works from 1 because 1st element in buffer is reserved */
+    for (int i = 1; i <= AUDIO_FRAMES_PER_BUFFER; i++) {
+        lua_rawgeti(L, 1, i);
+        buffer[i] = (float)luaL_checknumber(L, -1);
+        lua_pop(L, 1);
+    }
+
+    memcpy(audio_context.data.buffer_out, buffer, AUDIO_FRAMES_PER_BUFFER * sizeof(float));
 
     return 0;
 }
@@ -521,6 +562,10 @@ static const luaL_Reg api[] = {
     /* collison */
     {"check_point_circle", l_check_point_circle},
     {"check_point_rect", l_check_point_rect},
+
+    /* audio */
+    {"get_audio_buffer", l_get_audio_buffer},
+    {"write_audio_buffer", l_write_audio_buffer},
 
     /* localization */
     {"local_load", l_local_load},

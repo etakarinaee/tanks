@@ -6,9 +6,8 @@
 #include <stdint.h> 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
-
-#define FRAMES_PER_BUFFER 512
 
 struct audio_context audio_context = {0};
 
@@ -24,37 +23,46 @@ static inline int check_err(PaError err) {
 static int audio_callback(const void* input_buf, void* out_buf, unsigned long frames_per_buf, 
                           const PaStreamCallbackTimeInfo *time_info, PaStreamCallbackFlags flags, void* user_data) {
 
-    (void)input_buf;
     (void)time_info;
     (void)flags;
 
     struct audio_data* data = user_data;
 
+    memset(data->buffer_out, 0, AUDIO_FRAMES_PER_BUFFER * sizeof(float));
+
+    if (input_buf) {
+        memcpy(data->buffer_in, input_buf, AUDIO_FRAMES_PER_BUFFER * sizeof(float));
+    }
+
+    if (data->buffer_out[0] == AUDIO_INPUT_NOT_AVAILALBE) {
+        float* out = (float*)out_buf;
+        for (unsigned long i = 0; i < frames_per_buf * data->channels_out; i++)
+            out[i] = 0.0f;
+        return paContinue;
+    }
+
+    /* skip first element in buffer */
+    float* in = data->buffer_out + 1;
     float* out = (float*)out_buf;
 
-    static float phase = 0.0f;
-
-    const float freq = 440.0f;
-    const float amp  = 0.2f;
-    const float sr   = data->sample_rate_out; /* TODO: maybe not hardcode sample rate */
-
-    for (uint64_t i = 0; i < frames_per_buf; i++) {
-
-        float sample = amp * sinf(phase);
-        phase += 2.0f * (float)M_PI * freq / sr;
-
-        if (phase >= 2.0f * (float)M_PI)
-            phase -= 2.0f * (float)M_PI;
-
-        if (data->channels_out == 2) {
-            out[i * 2]     = sample;
-            out[i * 2 + 1] = sample;
-        } else {
+    if (data->channels_in == data->channels_out) {
+        for (unsigned long i = 0; i < frames_per_buf * data->channels_out; i++)
+            out[i] = in[i];
+    } else if (data->channels_in == 1 && data->channels_out == 2) {
+        for (unsigned long i = 0; i < frames_per_buf; i++) {
+            float sample = in[i];
+            out[i * 2]     = sample; // left
+            out[i * 2 + 1] = sample; // right
+        }
+    } else if (data->channels_in == 2 && data->channels_out == 1) {
+        for (unsigned long i = 0; i < frames_per_buf; i++) {
+            float sample = 0.5f * (in[i * 2] + in[i * 2 + 1]);
             out[i] = sample;
         }
     }
 
     return paContinue;
+
 }
 
 static inline PaStreamParameters get_dev_info(int dev, int *sample_rate, bool input) {
@@ -88,7 +96,7 @@ static int create_stream(int dev_input, int dev_output) {
 
     /* TODO: maybe not hardcode sample rate */
     audio_context.err = Pa_OpenStream(&audio_context.stream, &input_param, &output_param, 48000,
-                                      FRAMES_PER_BUFFER, paClipOff, audio_callback, &audio_context.data);
+                                      AUDIO_FRAMES_PER_BUFFER, paClipOff, audio_callback, &audio_context.data);
     if (check_err(audio_context.err)) {
         fprintf(stderr, "audio: failed to open stream\n");
         return 1;

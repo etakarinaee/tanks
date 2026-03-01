@@ -1,3 +1,4 @@
+
 local server = nil
 local clients = {}  -- { [id] = { nickname = "name" } }
 
@@ -33,6 +34,10 @@ function game_update(dt)
             elseif msg_type == "pos" then
                 for id, _ in pairs(clients) do
                     server:send(id, ev.id .. ":pos:" .. payload)
+                end
+            elseif msg_type == "audio" then 
+                for id, _ in pairs(clients) do 
+                    server:send(id, ev.id  .. ":audio:" .. payload)
                 end
             end
         end

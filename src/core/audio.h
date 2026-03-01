@@ -8,6 +8,13 @@
 /* also makes clear this is atomic */
 #define atomic_int int
 
+#define AUDIO_FRAMES_PER_BUFFER 512
+
+enum {
+    AUDIO_INPUT_AVAILABLE,
+    AUDIO_INPUT_NOT_AVAILALBE,
+};
+
 struct audio_data {  
     atomic_int vol_l;
     atomic_int vol_r;
@@ -16,6 +23,13 @@ struct audio_data {
     atomic_int channels_out;
     atomic_int sample_rate_in;
     atomic_int sample_rate_out;
+
+    /*
+        buffer[0] always indicates if we want to play any data 
+        if data then buffer[0] == AUDIO_INPUT_AVAILABLE 
+    */
+    float buffer_out[AUDIO_FRAMES_PER_BUFFER + 1];
+    float buffer_in[AUDIO_FRAMES_PER_BUFFER];
 };
 
 struct audio_context {
