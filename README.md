@@ -31,8 +31,8 @@ SAUSAGES_IP= ./server
 SAUSAGES_IP= SAUSAGES_NICKNAME= ./client
 ```
 
-`SAUSAGES_IP` is IPv4, where the server is hosted and where the client connects, default is `127.0.0.1`
-`SAUSAGES_NICKNAME` is the nickname used in-game, default is `Player`
+- `SAUSAGES_IP` is IPv4, where the server is hosted and where the client connects, default is `127.0.0.1`
+- `SAUSAGES_NICKNAME` is the nickname used in-game, default is `Player`
 
 # Gallery
 
