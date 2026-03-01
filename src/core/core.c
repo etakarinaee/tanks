@@ -35,6 +35,7 @@ int main(void) {
     }
     fclose(test);
 
+#ifndef SERVER
     if (!glfwInit()) {
         fprintf(stderr, "failed to init glfw\n");
         return EXIT_FAILURE;
@@ -61,7 +62,9 @@ int main(void) {
     glfwSetFramebufferSizeCallback(window, resize_callback);
     glfwSetWindowUserPointer(window, &render_context);
 
+    // TODO: any calls to renderer in server would segfault
     renderer_init(&render_context);
+#endif
 
     L = lua_init(SAUSAGES_DATA, ENTRY);
     if (!L) {

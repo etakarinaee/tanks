@@ -2,6 +2,7 @@ local client = nil
 local physics = require('physics')
 
 local local_id = nil
+local local_nickname = os.getenv("SAUSAGES_NICKNAME") or "Player"
 local players = {}
 
 local platform = { x = 0.0, y = -0.5, w = 800, h = 100 }
@@ -10,26 +11,35 @@ local gravity = -2.0
 local friction = 0.88
 local player_w = 30
 local player_h = 30
+local speed = 1200.0
 
-local function new_player()
+local function new_player(nickname)
     return {
         x = 0.0,
         y = 0.5,
         vx = 0.0,
         vy = 0.0,
+        nickname = nickname or "Unknown",
     }
 end
--- TODO: generic serialize functions (in core?)
+
 local function serialize_position(player)
-    return string.format("%.4f,%.4f", player.x, player.y)
+    return string.format("pos:%.4f,%.4f", player.x, player.y)
 end
 
--- TODO: save as with serialize
-local function deserialize_position(data)
-    local id, x, y = data:match("^(%d):([^,]+),(.+)$")
+local function deserialize_message(data)
+    local id, msg_type, payload = data:match("^(%d+):(%w+):(.+)$")
+    if not id then return nil end
 
-    if id then
-        return tonumber(id), tonumber(x), tonumber(y)
+    id = tonumber(id)
+
+    if msg_type == "pos" then
+        local x, y = payload:match("^([^,]+),(.+)$")
+        return id, "pos", tonumber(x), tonumber(y)
+    elseif msg_type == "nickname" then
+        return id, "nickname", payload
+    elseif msg_type == "left" then
+        return id, "left", nil
     end
 
     return nil
@@ -37,21 +47,9 @@ end
 
 local image = core.load_texture("../test.png")
 local font = core.load_font("../AdwaitaSans-Regular.ttf", 48, {32, 128})
-local angle = 0.0
-
-local pos_x = 0.0
-local pos_y = 0.0
-
-local speed = 1200.0
 
 function game_init()
-    core.local_load("en.txt")
-    core.print(core.local_get("placeholder"))
-
-    core.local_load("ru.txt")
-    core.print(core.local_get("placeholder"))
-
-    client = core.client.new("127.0.0.1", 7777)
+    client = core.client.new(os.getenv("SAUSAGES_IP") or "127.0.0.1", 7777)
 end
 
 local tick_rate = 1.0 / 120.0
@@ -62,20 +60,30 @@ function game_update(delta_time)
     while ev do
         if ev.type == core.net_event.connect then
             local_id = ev.id
-            players[local_id] = new_player()
+            players[local_id] = new_player(local_nickname)
+            client:send("nickname:" .. local_nickname)
         elseif ev.type == core.net_event.disconnect then
             core.print("disconnected")
             local_id = nil
         elseif ev.type == core.net_event.data then
-            local id, x, y = deserialize_position(ev.data)
+            local id, msg_type, a, b = deserialize_message(ev.data)
 
             if id and id ~= local_id then
-                if not players[id] then
-                    players[id] = new_player()
+                if msg_type == "pos" then
+                    if not players[id] then
+                        players[id] = new_player()
+                    end
+                    players[id].x = a
+                    players[id].y = b
+                elseif msg_type == "nickname" then
+                    if not players[id] then
+                        players[id] = new_player(a)
+                    else
+                        players[id].nickname = a
+                    end
+                elseif msg_type == "left" then
+                    players[id] = nil
                 end
-
-                players[id].x = x
-                players[id].y = y
             end
         end
         ev = client:poll()
@@ -123,7 +131,7 @@ function game_update(delta_time)
     core.push_rect({platform.x, platform.y}, {platform.w, platform.h}, {0.3, 0.7, 0.3})
     for id, player in pairs(players) do
         core.push_texture({player.x, player.y}, {player_w, player_h}, image)
-        core.push_text_ex(font, "ID: " .. id, {player.x, player.y + 10}, 25, {1.0, 1.0, 1.0}, core.text_anchor.center)
+        core.push_text_ex(font, player.nickname, {player.x, player.y + 10}, 25, {1.0, 1.0, 1.0}, core.text_anchor.center)
     end
 end
 
