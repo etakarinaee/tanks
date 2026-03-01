@@ -21,7 +21,7 @@ static inline int check_err(PaError err) {
     return 0;
 }
 
-static int audio_callback(const void* input_buf, void* out_buf, uint64_t frames_per_buf, 
+static int audio_callback(const void* input_buf, void* out_buf, unsigned long frames_per_buf, 
                           const PaStreamCallbackTimeInfo *time_info, PaStreamCallbackFlags flags, void* user_data) {
 
     (void)input_buf;
@@ -36,7 +36,7 @@ static int audio_callback(const void* input_buf, void* out_buf, uint64_t frames_
 
     const float freq = 440.0f;
     const float amp  = 0.2f;
-    const float sr   = (float)data->sample_rate;
+    const float sr   = 48000.0f;
 
     for (uint64_t i = 0; i < frames_per_buf; i++) {
 
@@ -54,7 +54,8 @@ static int audio_callback(const void* input_buf, void* out_buf, uint64_t frames_
         }
     }
 
-    return paContinue;}
+    return paContinue;
+}
 
 static inline PaStreamParameters get_dev_info(int dev, int *sample_rate, bool input) {
     PaStreamParameters param = {0};
@@ -71,7 +72,7 @@ static inline PaStreamParameters get_dev_info(int dev, int *sample_rate, bool in
     param.channelCount = ((input ? dev_info->maxInputChannels : dev_info->maxOutputChannels) >= 2) ? 2 : 1;
     param.hostApiSpecificStreamInfo = NULL;
     param.sampleFormat = paFloat32;
-    param.suggestedLatency = dev_info->defaultLowInputLatency;
+    param.suggestedLatency = input ? dev_info->defaultLowInputLatency : dev_info->defaultLowOutputLatency;
 
     return param;
 }
@@ -85,8 +86,8 @@ static int create_stream(int dev_input, int dev_output) {
     PaStreamParameters output_param = get_dev_info(dev_output, NULL, false);
     audio_context.data.channels_out = output_param.channelCount;
 
-    audio_context.err = Pa_OpenStream(&audio_context.stream, &input_param, &output_param, audio_context.data.sample_rate,
-                                      FRAMES_PER_BUFFER, paNoFlag, audio_callback, &audio_context.data);
+    audio_context.err = Pa_OpenStream(&audio_context.stream, &input_param, &output_param, 48000,
+                                      FRAMES_PER_BUFFER, paClipOff, audio_callback, &audio_context.data);
     if (check_err(audio_context.err)) {
         fprintf(stderr, "audio: failed to open stream\n");
         return 1;
@@ -107,6 +108,8 @@ int audio_init() {
         fprintf(stderr, "audio: failed to init portaudio\n");
         return 1;
     }
+
+    printf("Host Audio API: %s\n", Pa_GetHostApiInfo(Pa_GetDefaultHostApi())->name);
 
     int dev_input = Pa_GetDefaultInputDevice();
     if (dev_input == paNoDevice) {
